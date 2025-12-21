@@ -1,0 +1,16 @@
+// 配色のテーマ
+theme = tokyonight
+// フォントテーマ
+font-family = "BIZ UDGothic Bold"
+// フォントサイズ
+font-size = 17
+background-opacity = 0.8
+background-blur = 20
+unfocused-split-opacity = 0.7
+cursor-opacity = 0.7
+font-thicken
+window-save-state = always
+window-padding-x = 2
+window-padding-y = 2
+window-padding-balance
+
