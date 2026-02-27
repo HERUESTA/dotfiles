@@ -6,7 +6,7 @@ return {
     -- Ctrl+Shift+tで新しいタブを作成
     {
       key = 't',
-      mods = 'SHIFT|CTRL',
+      mods = 'SHIFT|CMD',
       action = act.SpawnTab 'CurrentPaneDomain',
     },
     -- Cmd+Shift+wでタブを閉じる
@@ -20,6 +20,12 @@ return {
       key = 'd',
       mods = 'CMD',
       action = act.SplitHorizontal { domain = 'CurrentPaneDomain' },
+    },
+    -- Shift+Cmd+iで新しいペインを作成(画面を分割)
+    {
+      key = 'i',
+      mods = 'CMD|SHIFT',
+      action = act.SplitVertical { domain = 'CurrentPaneDomain' },
     },
     -- Cmd+[ で前のペインに移動
     {
