@@ -1,6 +1,6 @@
 export ZSH="$HOME/.oh-my-zsh"
 
-ZSH_THEME="robbyrussell"
+ZSH_THEME="eastwood"
 
 plugins=(
   git
@@ -30,3 +30,7 @@ source $ZSH/oh-my-zsh.sh
 
 . "$HOME/.local/bin/env"
 export PATH="$(brew --prefix node@22)/bin:$PATH"
+
+// 不要なローカルブランチを削除するgitのエイリアス
+git config --global alias.pd '!git fetch --prune && git branch -vv | grep ": gone]" | awk "{print \$1}" | xargs git branch -D'
+
