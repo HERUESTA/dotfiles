@@ -28,8 +28,7 @@ return {
     },
     lazy = false, -- neo-tree will lazily load itself
     keys = {
-      { mode = "n", "<leader>t", "<cmd>Neotree toggle<CR>", {} },
-      { mode = "n", "<C-m>", "<cmd>Neotree reveal<CR>", {} },
+      { mode = "n", "<C-n>", "<cmd>Neotree toggle<CR>", {} },
       { mode = "n", "<leader>b", "<cmd>Neotree float buffers<CR>", {} },
     },
     opts = {
