@@ -1,12 +1,16 @@
 #!/bin/bash
 # create-labels.sh
 
+# 使用方法
+# chmod +x create-labels.sh で実行権限付与
+# ./create-labels.sh で実行
+
 set -e
 
 REPOS=(
-  "HERUESTA/github_actions_playground"
-  "HERUESTA/store"
-  "HERUESTA/read_book"
+  "owner/repo1"
+  "owner/repo2"
+  "owner/repo3"
 )
 
 LABELS=(
