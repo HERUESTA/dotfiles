@@ -14,9 +14,9 @@ REPOS=(
 )
 
 LABELS=(
-  "AI仕様調査|7057ff|claudeの仕様調査用ラベル"
-  "AIログ調査|d876e3|claudeのログ調査用ラベル"
-  "AIコード調査|fbca04|claudeのコード調査用ラベル"
+  "sample1|7057ff|sample1用ラベル" # ラベル名 | カラー | description
+  "sample2|d876e3|sample2用ラベル"
+  "sample3|fbca04|sample3用ラベル"
 )
 
 for REPO in "${REPOS[@]}"; do
