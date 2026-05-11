@@ -1,0 +1,26 @@
+## 公式
+https://github.com/jesseduffield/lazydocker
+## コマンド集
+Serveices
+| キー | 動作 |
+| ---- | ---- |
+| u | サービスをup |
+| U | サービスを全体をup |
+| D | プロジェクト全体をdown |
+| S | サービスをstart |
+| s | stop |
+| r | restart |
+| R | restartオプションを表示 |
+| e | シェルでexec |
+| d | コンテナを削除 |
+
+Containers
+| キー | 動作 |
+| s | stop |
+| r | restart |
+| E | シェルでexec |
+
+
+
+
+
