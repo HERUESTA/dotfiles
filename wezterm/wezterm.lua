@@ -8,6 +8,7 @@ config.key_tables = keybinds.key_tables
 config.automatically_reload_config = true
 config.font_size = 13.0
 config.use_ime = true
+config.default_cursor_style = "SteadyBlock"
 config.window_background_opacity = 0.85
 config.macos_window_background_blur = 20
 config.window_decorations = "RESIZE"
@@ -57,4 +58,3 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 end)
 
 return config
-
