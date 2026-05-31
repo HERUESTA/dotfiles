@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ちいさな ぼうけん 〜 りゅうおうをたおせ 〜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --dq-blue-deep:#000080;
+    --ink:#fefefe;
+    --gold:#ffd23f;
+    --hp:#3ad36b;
+    --hp-low:#e6432f;
+    --mp:#3aa0ff;
+    --panel-border:#fefefe;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(circle at 50% -10%, #18204a 0%, #060814 60%, #02030a 100%);
+    font-family:'DotGothic16', monospace;
+    color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:16px;
+    -webkit-font-smoothing:none;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.16) 2px 4px);
+    pointer-events:none;z-index:99;mix-blend-mode:multiply;
+  }
+  .machine{width:min(700px,100%);}
+  .title-bar{
+    text-align:center;font-family:'Press Start 2P', monospace;font-size:11px;
+    letter-spacing:1px;color:var(--gold);text-shadow:2px 2px 0 #803500;margin-bottom:10px;
+  }
+  .screen{
+    position:relative;background:#000;border:4px solid #3a3a55;border-radius:6px;
+    box-shadow:0 0 0 4px #14162e, 0 18px 40px rgba(0,0,0,.6);overflow:hidden;
+  }
+  .stage{
+    position:relative;height:300px;background:#000;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* ----- フィールド ----- */
+  #field{display:block;width:100%;height:100%;image-rendering:pixelated;}
+  .stage.battle #field{display:none;}
+  .stage.battle{background:radial-gradient(circle at 50% 60%, #2a2a3e 0%, #000 90%);}
+
+  /* D-pad */
+  .dpad{
+    position:absolute;right:12px;bottom:12px;width:120px;height:120px;
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+    gap:4px;z-index:6;opacity:.85;
+  }
+  .stage.battle .dpad{display:none;}
+  .dpad button{
+    font-family:'DotGothic16',monospace;font-size:18px;color:#fff;
+    background:rgba(0,0,40,.55);border:2px solid rgba(255,255,255,.7);border-radius:8px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .dpad button:active{background:rgba(43,52,200,.9);}
+  .dpad .up{grid-area:1/2;} .dpad .left{grid-area:2/1;}
+  .dpad .right{grid-area:2/3;} .dpad .down{grid-area:3/2;}
+  .dpad .ctr{grid-area:2/2;background:none;border:none;cursor:default;}
+
+  /* ----- 戦闘 ----- */
+  .enemy{text-align:center;z-index:2;}
+  .enemy .sprite{font-size:90px;filter:drop-shadow(0 0 12px rgba(120,40,200,.5));animation:enemyFloat 2s ease-in-out infinite;}
+  .enemy.boss .sprite{font-size:112px;filter:drop-shadow(0 0 18px rgba(220,40,40,.6));}
+  @keyframes enemyFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.03)}}
+  .enemy .ename{font-size:14px;margin-top:4px;letter-spacing:1px;text-shadow:1px 1px 0 #000;}
+  .shake{animation:shake .3s linear;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .hit-flash{animation:flash .25s steps(2) 2;}
+  @keyframes flash{0%{filter:brightness(4) saturate(0)}100%{filter:none}}
+  .fade-out{animation:fadeOut .6s forwards;}
+  @keyframes fadeOut{to{opacity:0;transform:scale(.4) rotate(8deg);filter:blur(2px)}}
+  .slash{position:absolute;font-size:60px;color:#fff;opacity:0;z-index:5;text-shadow:0 0 8px #fff;}
+  .slash.go{animation:slashAnim .4s ease-out;}
+  @keyframes slashAnim{0%{opacity:0;transform:scale(.3) rotate(-30deg)}40%{opacity:1}100%{opacity:0;transform:scale(1.6) rotate(20deg)}}
+
+  /* ----- ステータス ----- */
+  .status{display:flex;gap:8px;padding:8px;background:#000;}
+  .panel{
+    background:var(--dq-blue-deep);border:3px solid var(--panel-border);border-radius:8px;
+    padding:8px 10px;box-shadow:inset 0 0 0 2px #000, 0 0 0 2px #000;
+  }
+  .stat-panel{flex:1;font-size:13px;line-height:1.5;}
+  .stat-panel .name{color:var(--gold);font-size:14px;display:block;margin-bottom:2px;}
+  .stat-row{display:flex;justify-content:space-between;gap:8px;}
+  .stat-row b{font-weight:normal;}
+  .val-hp{color:var(--hp);} .val-hp.low{color:var(--hp-low);}
+  .val-mp{color:var(--mp);} .val-g{color:var(--gold);}
+  .bars{display:flex;flex-direction:column;gap:5px;justify-content:center;width:150px;}
+  .bar-wrap{font-size:11px;}
+  .bar-label{display:flex;justify-content:space-between;margin-bottom:2px;}
+  .bar{height:10px;background:#222;border:2px solid #fff;border-radius:3px;overflow:hidden;}
+  .bar > i{display:block;height:100%;transition:width .4s;}
+  .bar.hp > i{background:var(--hp);} .bar.hp.low > i{background:var(--hp-low);}
+  .bar.mp > i{background:var(--mp);}
+
+  /* ----- メッセージ＆コマンド ----- */
+  .console{display:flex;gap:8px;padding:0 8px 8px;background:#000;align-items:stretch;}
+  .message{
+    flex:1;min-height:96px;background:var(--dq-blue-deep);border:3px solid var(--panel-border);
+    border-radius:8px;padding:10px 12px;box-shadow:inset 0 0 0 2px #000, 0 0 0 2px #000;
+    font-size:14px;line-height:1.7;white-space:pre-wrap;position:relative;
+  }
+  .message .blink{position:absolute;right:10px;bottom:8px;color:var(--gold);animation:blink 1s steps(2) infinite;}
+  @keyframes blink{50%{opacity:0}}
+  .commands{
+    width:160px;background:var(--dq-blue-deep);border:3px solid var(--panel-border);border-radius:8px;
+    padding:6px;box-shadow:inset 0 0 0 2px #000, 0 0 0 2px #000;
+    display:grid;grid-template-columns:1fr 1fr;gap:4px;align-content:start;
+  }
+  .commands.single{grid-template-columns:1fr;}
+  .cmd{
+    font-family:'DotGothic16',monospace;font-size:14px;color:var(--ink);background:transparent;border:none;
+    padding:6px 4px 6px 18px;text-align:left;cursor:pointer;border-radius:4px;position:relative;transition:background .1s;
+  }
+  .cmd:hover:not(:disabled),.cmd:focus-visible{background:#2b34c8;outline:none;}
+  .cmd:hover:not(:disabled)::before,.cmd:focus-visible::before{content:"▶";position:absolute;left:3px;color:var(--gold);}
+  .cmd:disabled{color:#6a72b0;cursor:not-allowed;}
+  .cmd.wide{grid-column:1 / -1;text-align:center;padding-left:4px;}
+  .cmd.wide:hover::before{display:none;}
+  .hint{text-align:center;font-size:11px;color:#8089c8;margin-top:8px;font-family:'DotGothic16',monospace;}
+  .level-up{color:var(--gold);animation:pulse .5s ease-in-out 3;}
+  @keyframes pulse{50%{text-shadow:0 0 10px var(--gold)}}
+
+  @media (max-width:560px){
+    .stage{height:240px;}
+    .commands{width:128px;}
+    .bars{width:108px;}
+    .stat-panel{font-size:11px;}
+    .dpad{width:100px;height:100px;}
+  }
+</style>
+</head>
+<body>
+  <div class="machine">
+    <div class="title-bar">▶ ちいさな ぼうけん ◀</div>
+    <div class="screen">
+      <div class="stage" id="stage">
+        <canvas id="field"></canvas>
+        <div class="slash" id="slash">⚔️</div>
+        <div class="dpad" id="dpad">
+          <button class="up"    aria-label="うえ">▲</button>
+          <button class="left"  aria-label="ひだり">◀</button>
+          <span class="ctr"></span>
+          <button class="right" aria-label="みぎ">▶</button>
+          <button class="down"  aria-label="した">▼</button>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="panel stat-panel">
+          <span class="name" id="pname">ゆうしゃ</span>
+          <div class="stat-row"><b>レベル</b><span id="lv">1</span></div>
+          <div class="stat-row"><b>HP</b><span class="val-hp" id="hpTxt">20/20</span></div>
+          <div class="stat-row"><b>MP</b><span class="val-mp" id="mpTxt">6/6</span></div>
+          <div class="stat-row"><b>ちから</b><span id="atk">5</span></div>
+        </div>
+        <div class="panel bars">
+          <div class="bar-wrap">
+            <div class="bar-label"><span>HP</span><span id="hpPct">100%</span></div>
+            <div class="bar hp" id="hpBar"><i style="width:100%"></i></div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-label"><span>MP</span><span id="mpPct">100%</span></div>
+            <div class="bar mp" id="mpBar"><i style="width:100%"></i></div>
+          </div>
+          <div class="stat-row" style="font-size:11px;margin-top:2px;"><b>EXP</b><span id="exp">0</span></div>
+          <div class="stat-row" style="font-size:11px;"><b>ゴールド</b><span class="val-g" id="gold">0</span></div>
+        </div>
+      </div>
+
+      <div class="console">
+        <div class="message" id="msg"></div>
+        <div class="commands single" id="cmds"></div>
+      </div>
+    </div>
+    <div class="hint">やじるしキー / WASD / がめんの ボタン で あるけます</div>
+  </div>
+
+<script>
+//==================== マップ ====================
+// . くさ  = みち  b はし  o まち  C しろ  T き  ~ みず  ^ やま
+const MAP_STR = [
+  "TTTTTTTTTTTTTTTTTTTT",
+  "T..................T",
+  "T...^^.......TT....T",
+  "T..^^^....======...T",
+  "T...^....=......=..T",
+  "T.......=...~~~..=.T",
+  "T......=...~~~~..=CT",
+  "T.....=...~~b~~..=.T",
+  "T.o====...~~b~~..=.T",
+  "T.....=....~~~...=.T",
+  "T......=........=..T",
+  "T...TT..=......==..T",
+  "T..TTT...======....T",
+  "T...TT..........^^.T",
+  "T................^^T",
+  "TTTTTTTTTTTTTTTTTTTT",
+];
+const MAP = MAP_STR.map(r=>r.split(""));
+const MAP_W = MAP[0].length, MAP_H = MAP.length;
+const WALKABLE = new Set([".","=","b","o","C"]);
+const tileAt=(x,y)=> (y<0||x<0||y>=MAP_H||x>=MAP_W) ? "T" : MAP[y][x];
+
+//==================== てきデータ ====================
+const ENEMIES = [
+  {name:"スライム",     sprite:"🟦", hp:8,  atk:4,  exp:3,  gold:2},
+  {name:"おおがらす",   sprite:"🐦‍⬛", hp:12, atk:6,  exp:5,  gold:4},
+  {name:"さそりばち",   sprite:"🦂", hp:16, atk:8,  exp:8,  gold:6},
+  {name:"がいこつへい", sprite:"💀", hp:24, atk:11, exp:14, gold:11},
+  {name:"まじょ",       sprite:"🧙", hp:30, atk:14, exp:20, gold:16, magic:true},
+  {name:"ゴーレム",     sprite:"🗿", hp:48, atk:18, exp:34, gold:28},
+];
+const BOSS = {name:"りゅうおう", sprite:"🐉", hp:120, atk:24, boss:true};
+const EXP_TABLE = [0,7,16,30,50,80,120,175,250,360,520];
+
+//==================== ゲーム状態 ====================
+const G = {
+  name:"ゆうしゃ", lv:1, exp:0,
+  hp:20, maxhp:20, mp:6, maxmp:6, atk:5, def:2,
+  gold:0, herbs:3,
+  px:1, py:8,            // フィールド上の位置（まちのとなり）
+  mode:"field",          // field | battle | menu | over
+  enemy:null, busy:false,
+};
+
+//==================== DOM ====================
+const $ = id => document.getElementById(id);
+const stage=$("stage"), slash=$("slash"), msgEl=$("msg"), cmds=$("cmds");
+const canvas=$("field"), ctx=canvas.getContext("2d");
+
+//==================== キャンバス描画 ====================
+const TILE = 38;
+let VIEW_W=10, VIEW_H=8, DPR=1;
+function resizeCanvas(){
+  const rect=stage.getBoundingClientRect();
+  DPR=window.devicePixelRatio||1;
+  canvas.width=rect.width*DPR; canvas.height=rect.height*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  canvas._w=rect.width; canvas._h=rect.height;
+  VIEW_W=rect.width/TILE; VIEW_H=rect.height/TILE;
+}
+window.addEventListener("resize", ()=>{resizeCanvas();});
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function drawField(t){
+  if(G.mode==="battle") return;
+  const w=canvas._w, h=canvas._h;
+  // カメラ（ゆうしゃ中心、マップ端でクランプ）
+  let camX = clamp(G.px - VIEW_W/2 + .5, 0, Math.max(0,MAP_W-VIEW_W));
+  let camY = clamp(G.py - VIEW_H/2 + .5, 0, Math.max(0,MAP_H-VIEW_H));
+  ctx.clearRect(0,0,w,h);
+
+  const x0=Math.floor(camX), y0=Math.floor(camY);
+  const x1=Math.ceil(camX+VIEW_W), y1=Math.ceil(camY+VIEW_H);
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+
+  for(let y=y0;y<=y1;y++){
+    for(let x=x0;x<=x1;x++){
+      const sx=(x-camX)*TILE, sy=(y-camY)*TILE;
+      const tile=tileAt(x,y);
+      // ベースのくさ／みず／みち
+      let base="#3f8f33";
+      if(tile==="~"){ const f=0.5+0.5*Math.sin(t/500+x*0.7+y*0.5); base=`rgb(${30+10*f},${95+20*f},${220})`; }
+      else if(tile==="="||tile==="b"){ base="#c9a86a"; }
+      ctx.fillStyle=base; ctx.fillRect(sx,sy,TILE+1,TILE+1);
+      // くさのテクスチャ
+      if(tile!=="~"&&tile!=="="&&tile!=="b"){
+        ctx.fillStyle="rgba(255,255,255,.05)";
+        if((x+y)%2===0) ctx.fillRect(sx+4,sy+TILE-9,3,3);
+        ctx.fillStyle="rgba(0,0,0,.06)";
+        if((x*7+y*3)%3===0) ctx.fillRect(sx+TILE-9,sy+5,3,3);
+      }
+      if(tile==="b"){ ctx.fillStyle="#8a5a2a"; ctx.fillRect(sx,sy+6,TILE,TILE-12);
+        ctx.fillStyle="#6b4420"; for(let i=4;i<TILE;i+=8) ctx.fillRect(sx+i,sy+6,2,TILE-12); }
+      // オブジェクト（えもじ）
+      const em = tile==="T"?"🌲": tile==="^"?"⛰️": tile==="o"?"🏠": tile==="C"?"🏰": "";
+      if(em){ ctx.font=`${TILE*0.82}px serif`; ctx.fillText(em, sx+TILE/2, sy+TILE/2+1); }
+    }
+  }
+  // ゆうしゃ
+  const hx=(G.px-camX)*TILE+TILE/2;
+  const hy=(G.py-camY)*TILE+TILE/2 + Math.sin(t/250)*2;
+  ctx.font=`${TILE*0.8}px serif`;
+  ctx.fillStyle="rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(hx,hy+TILE*0.34,TILE*0.26,TILE*0.1,0,0,7); ctx.fill();
+  ctx.fillText("🧝", hx, hy);
+}
+function loop(t){ drawField(t); requestAnimationFrame(loop); }
+
+//==================== 共通描画 ====================
+function render(){
+  $("lv").textContent=G.lv;
+  $("hpTxt").textContent=`${Math.max(0,G.hp)}/${G.maxhp}`;
+  $("mpTxt").textContent=`${G.mp}/${G.maxmp}`;
+  $("atk").textContent=G.atk;
+  $("exp").textContent=G.exp;
+  $("gold").textContent=G.gold;
+  const hpPct=Math.max(0,G.hp/G.maxhp*100), mpPct=Math.max(0,G.mp/G.maxmp*100);
+  $("hpBar").querySelector("i").style.width=hpPct+"%";
+  $("mpBar").querySelector("i").style.width=mpPct+"%";
+  $("hpPct").textContent=Math.round(hpPct)+"%";
+  $("mpPct").textContent=Math.round(mpPct)+"%";
+  const low=hpPct<=25;
+  $("hpBar").classList.toggle("low",low); $("hpTxt").classList.toggle("low",low);
+}
+function say(text,blink=true){ msgEl.innerHTML=text+(blink?'<span class="blink">▼</span>':''); }
+function setCommands(list){
+  cmds.innerHTML="";
+  cmds.classList.toggle("single", list.length<=1 || list.some(c=>c.wide));
+  list.forEach(c=>{
+    const b=document.createElement("button");
+    b.className="cmd"+(c.wide?" wide":""); b.textContent=c.label; b.disabled=!!c.disabled;
+    b.onclick=()=>{ if(!G.busy) c.action(); };
+    cmds.appendChild(b);
+  });
+}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+
+//==================== フィールド（あるく） ====================
+function enterField(){
+  G.mode="field"; G.enemy=null; G.busy=false;
+  stage.classList.remove("battle");
+  stage.querySelector(".enemy")?.remove();
+  fieldCommands();
+  fieldFlavor();
+}
+function fieldFlavor(){
+  const f=["アレフガルドの だいちを あるいている。","くさむらが かぜに ゆれている。","とおくに りゅうおうの しろが みえる。","へいわな ひとときだ。"];
+  say(f[rnd(0,f.length-1)]);
+}
+function fieldCommands(){
+  const opts=[{label:"つよさ", action:showStatus}];
+  if(G.herbs>0) opts.push({label:`やくそう(${G.herbs})`, action:()=>useHerb(()=>{enterField();})});
+  setCommands(opts);
+}
+function showStatus(){
+  say(`${G.name}  レベル${G.lv}\nHP ${G.hp}/${G.maxhp}  MP ${G.mp}/${G.maxmp}\nちから ${G.atk}  みのまもり ${G.def}\nつぎのレベルまで あと ${nextExp()}`);
+  setCommands([{label:"もどる",wide:true,action:()=>{fieldCommands();fieldFlavor();}}]);
+}
+function nextExp(){
+  const need=EXP_TABLE[G.lv] ?? (EXP_TABLE[EXP_TABLE.length-1]+(G.lv-EXP_TABLE.length+1)*200);
+  return Math.max(0, need-G.exp)+" EXP";
+}
+
+function move(dx,dy){
+  if(G.mode!=="field"||G.busy) return;
+  const nx=G.px+dx, ny=G.py+dy;
+  const tile=tileAt(nx,ny);
+  if(!WALKABLE.has(tile)) return;       // き・みず・やま は とおれない
+  G.px=nx; G.py=ny;
+
+  if(tile==="o"){ openTown(); return; }
+  if(tile==="C"){ confirmCastle(); return; }
+
+  // エンカウント（くさは たかめ、みちは ひくめ）
+  const rate = tile==="=" ? 0.05 : 0.13;
+  if(Math.random()<rate){ startBattle(pickEnemy()); }
+}
+function pickEnemy(){
+  const n=clamp(2+Math.floor(G.lv/2),2,ENEMIES.length);
+  const pool=ENEMIES.slice(0,n);
+  // たまに ひとつ うえの てきも でる
+  if(n<ENEMIES.length && Math.random()<0.2) return ENEMIES[n];
+  return pool[rnd(0,pool.length-1)];
+}
+
+//==================== まち ====================
+function openTown(){
+  G.mode="menu";
+  say("ここは ちいさな まち。\nやどやの ひとが ほほえんでいる。");
+  setCommands([
+    {label:"とまる(むりょう)", action:townRest},
+    {label:`やくそうを かう (8G)`, action:townBuy, disabled:G.gold<8},
+    {label:"つよさ", action:()=>{showStatusTown();}},
+    {label:"でる", action:leaveTown},
+  ]);
+}
+function showStatusTown(){
+  say(`${G.name}  レベル${G.lv}\nHP ${G.hp}/${G.maxhp}  MP ${G.mp}/${G.maxmp}\nちから ${G.atk}  みのまもり ${G.def}\nつぎのレベルまで あと ${nextExp()}`);
+  setCommands([{label:"もどる",wide:true,action:openTown}]);
+}
+function townRest(){
+  G.hp=G.maxhp; G.mp=G.maxmp; render();
+  say("ぐっすり ねむった。\nHPと MPが すべて かいふくした！");
+  setCommands([{label:"もどる",wide:true,action:openTown}]);
+}
+function townBuy(){
+  if(G.gold<8) return;
+  G.gold-=8; G.herbs++; render();
+  say(`やくそうを かった！\nのこり ${G.gold} ゴールド。`);
+  openTown();
+}
+function leaveTown(){
+  // まちの したへ いっぽ でる
+  if(WALKABLE.has(tileAt(G.px,G.py+1))) G.py+=1;
+  else if(WALKABLE.has(tileAt(G.px+1,G.py))) G.px+=1;
+  enterField();
+}
+
+//==================== しろ（ボス） ====================
+function confirmCastle(){
+  G.mode="menu";
+  say("りゅうおうの しろの まえに たった。\nなかに はいるか…？");
+  setCommands([
+    {label:"はいる", action:()=>startBattle(BOSS)},
+    {label:"まだ やめておく", action:()=>{
+        if(WALKABLE.has(tileAt(G.px-1,G.py))) G.px-=1;
+        else if(WALKABLE.has(tileAt(G.px,G.py+1))) G.py+=1;
+        enterField();
+    }},
+  ]);
+}
+
+//==================== せんとう ====================
+function startBattle(base){
+  G.mode="battle"; G.busy=false;
+  const scale=base.boss?1:1+G.lv*0.04;
+  G.enemy={
+    name:base.name, sprite:base.sprite, boss:!!base.boss, magic:!!base.magic,
+    hp:Math.round(base.hp*scale), maxhp:Math.round(base.hp*scale),
+    atk:Math.round(base.atk*scale), exp:base.exp||0, gold:base.gold||0,
+  };
+  stage.classList.add("battle");
+  stage.querySelector(".enemy")?.remove();
+  const e=document.createElement("div");
+  e.className="enemy"+(base.boss?" boss":""); e.id="enemySprite";
+  e.innerHTML=`<div class="sprite">${base.sprite}</div><div class="ename">${base.name} HP:<span id="ehp">${G.enemy.hp}</span></div>`;
+  stage.appendChild(e);
+  say(`${base.boss?"ついに あらわれた！\n":""}${base.name}が あらわれた！`);
+  battleMenu();
+}
+function battleMenu(){
+  setCommands([
+    {label:"たたかう", action:attack},
+    {label:"じゅもん", action:spellMenu},
+    {label:`どうぐ(${G.herbs})`, action:()=>useHerb(battleMenu), disabled:G.herbs<=0},
+    {label:"にげる", action:flee, disabled:G.enemy.boss},
+  ]);
+}
+function updateEnemyHp(){ const el=$("ehp"); if(el) el.textContent=Math.max(0,G.enemy.hp); }
+async function slashFx(){
+  slash.style.left="50%"; slash.style.top="40%";
+  slash.classList.remove("go"); void slash.offsetWidth; slash.classList.add("go");
+  const sp=$("enemySprite"); sp?.classList.add("hit-flash");
+  await wait(300); sp?.classList.remove("hit-flash");
+}
+async function attack(){
+  G.busy=true;
+  const base=Math.max(1,G.atk+rnd(-1,2)); const crit=Math.random()<0.08;
+  const total=crit?Math.round(base*1.8):base;
+  say(`${G.name}の こうげき！`); await slashFx();
+  G.enemy.hp-=total; updateEnemyHp();
+  say(`${G.enemy.name}に ${total}の ダメージ！${crit?"\nかいしんの いちげき！":""}`);
+  await wait(700); await afterPlayerAction();
+}
+function spellMenu(){
+  const s=[];
+  s.push({label:"メラ MP2", action:castMera, disabled:G.mp<2});
+  if(G.lv>=3) s.push({label:"ホイミ MP3", action:castHoimi, disabled:G.mp<3});
+  if(G.lv>=6) s.push({label:"ベギラマ MP5", action:castBegirama, disabled:G.mp<5});
+  s.push({label:"やめる",wide:true, action:battleMenu});
+  setCommands(s); say("どの じゅもんを となえる？");
+}
+async function castMera(){
+  G.busy=true; G.mp-=2; render(); const dmg=rnd(9,15);
+  say(`${G.name}は メラを となえた！\n🔥 ほのおが ${G.enemy.name}を つつむ！`); await slashFx();
+  G.enemy.hp-=dmg; updateEnemyHp(); say(`${G.enemy.name}に ${dmg}の ダメージ！`);
+  await wait(700); await afterPlayerAction();
+}
+async function castBegirama(){
+  G.busy=true; G.mp-=5; render(); const dmg=rnd(20,30);
+  say(`${G.name}は ベギラマを となえた！\n⚡ しゃくねつが ${G.enemy.name}を やく！`); await slashFx();
+  G.enemy.hp-=dmg; updateEnemyHp(); say(`${G.enemy.name}に ${dmg}の ダメージ！`);
+  await wait(700); await afterPlayerAction();
+}
+async function castHoimi(){
+  G.busy=true; G.mp-=3; const heal=rnd(18,26);
+  G.hp=Math.min(G.maxhp,G.hp+heal); render();
+  say(`${G.name}は ホイミを となえた！\n✨ HPが ${heal} かいふくした！`);
+  await wait(800); await enemyTurn();
+}
+function useHerb(back){
+  if(G.herbs<=0) return;
+  G.busy=true; G.herbs--; const heal=rnd(22,30);
+  G.hp=Math.min(G.maxhp,G.hp+heal); render();
+  say(`やくそうを つかった！\n✨ HPが ${heal} かいふくした！`);
+  setTimeout(async ()=>{
+    if(G.mode==="battle"){ await enemyTurn(); } else { G.busy=false; back(); }
+  },800);
+}
+async function flee(){
+  G.busy=true; say(`${G.name}は にげだした！`); await wait(600);
+  if(Math.random()<0.7){ say("うまく にげきれた！"); await wait(700); enterField(); }
+  else { say("しかし まわりこまれて しまった！"); await wait(700); await enemyTurn(); }
+}
+async function afterPlayerAction(){
+  if(G.enemy.hp<=0){ await victory(); return; }
+  await enemyTurn();
+}
+async function enemyTurn(){
+  const e=G.enemy; let dmg, line;
+  if(e.magic && Math.random()<0.4){ dmg=Math.max(1,rnd(e.atk-2,e.atk+4)-Math.floor(G.def/2)); line=`${e.name}は ギラを となえた！`; }
+  else if(e.boss && Math.random()<0.45){ dmg=Math.max(1,rnd(e.atk,e.atk+10)-Math.floor(G.def/2)); line=`${e.name}は はげしい ほのおを はいた！`; }
+  else { dmg=Math.max(1,rnd(e.atk-2,e.atk+2)-Math.floor(G.def/2)); line=`${e.name}の こうげき！`; }
+  say(line); await wait(500);
+  stage.classList.add("shake"); setTimeout(()=>stage.classList.remove("shake"),300);
+  G.hp-=dmg; render(); say(`${G.name}は ${dmg}の ダメージを うけた！`); await wait(700);
+  if(G.hp<=0){ await gameOver(); return; }
+  G.busy=false; battleMenu();
+}
+async function victory(){
+  $("enemySprite")?.querySelector(".sprite")?.classList.add("fade-out");
+  say(`${G.enemy.name}を たおした！`); await wait(800);
+  if(G.enemy.boss){
+    G.mode="over";
+    say("りゅうおうは ほろびさった！\n\nせかいに ひかりが もどった。\nゆうしゃは でんせつと なった…\n\n― おわり ―",false);
+    setCommands([{label:"もういちど あそぶ",wide:true,action:resetGame}]);
+    render(); return;
+  }
+  G.exp+=G.enemy.exp; G.gold+=G.enemy.gold; render();
+  say(`けいけんち ${G.enemy.exp} かくとく！\n${G.enemy.gold} ゴールドを てに いれた！`);
+  await wait(900);
+  await checkLevelUp();
+  enterField();
+}
+async function checkLevelUp(){
+  while(EXP_TABLE[G.lv]!==undefined && G.exp>=EXP_TABLE[G.lv]){
+    G.lv++;
+    const dh=rnd(4,7),dm=rnd(2,4),da=rnd(1,3),dd=rnd(1,2);
+    G.maxhp+=dh; G.maxmp+=dm; G.atk+=da; G.def+=dd; G.hp=G.maxhp; G.mp=G.maxmp; render();
+    let learn="";
+    if(G.lv===3) learn="\n💠 じゅもん「ホイミ」を おぼえた！";
+    if(G.lv===6) learn="\n💠 じゅもん「ベギラマ」を おぼえた！";
+    msgEl.innerHTML=`<span class="level-up">レベルが ${G.lv}に あがった！</span>\nさいだいHP+${dh} さいだいMP+${dm}\nちから+${da} みのまもり+${dd}${learn}<span class="blink">▼</span>`;
+    await wait(1500);
+  }
+}
+async function gameOver(){
+  render(); say(`${G.name}は ちからつきた…`); await wait(900);
+  say("おうさまの まえで めを さました。\n「しんでしまうとは なにごとだ！」\n\nもちきんは はんぶんに なった…",false);
+  G.gold=Math.floor(G.gold/2); G.hp=G.maxhp; G.mp=G.maxmp; render();
+  setCommands([{label:"ぼうけんを つづける",wide:true,action:()=>{ G.px=1; G.py=8; enterField(); }}]);
+}
+function resetGame(){
+  Object.assign(G,{lv:1,exp:0,hp:20,maxhp:20,mp:6,maxmp:6,atk:5,def:2,gold:0,herbs:3,px:1,py:8,mode:"field",enemy:null,busy:false});
+  render(); enterField();
+}
+
+//==================== にゅうりょく ====================
+function handleDir(dx,dy){
+  if(G.mode==="field"){ move(dx,dy); }
+  else { // メニュー／せんとうは ボタンを じゅんに フォーカス
+    const btns=[...cmds.querySelectorAll(".cmd:not(:disabled)")];
+    if(!btns.length) return;
+    const i=btns.indexOf(document.activeElement);
+    if(dx>0||dy>0) btns[(Math.max(0,i)+1)%btns.length].focus();
+    else btns[(i<=0?btns.length:i)-1].focus();
+  }
+}
+document.addEventListener("keydown",e=>{
+  const k=e.key.toLowerCase();
+  if(["arrowup","w"].includes(k)){ e.preventDefault(); handleDir(0,-1); }
+  else if(["arrowdown","s"].includes(k)){ e.preventDefault(); handleDir(0,1); }
+  else if(["arrowleft","a"].includes(k)){ e.preventDefault(); handleDir(-1,0); }
+  else if(["arrowright","d"].includes(k)){ e.preventDefault(); handleDir(1,0); }
+  else if(k==="enter"||k===" "){
+    if(G.mode!=="field"){ const b=document.activeElement; if(b&&b.classList?.contains("cmd")){ e.preventDefault(); b.click(); } }
+  }
+});
+// D-pad
+const dpad=$("dpad");
+dpad.querySelector(".up").onclick   =()=>handleDir(0,-1);
+dpad.querySelector(".down").onclick =()=>handleDir(0,1);
+dpad.querySelector(".left").onclick =()=>handleDir(-1,0);
+dpad.querySelector(".right").onclick=()=>handleDir(1,0);
+
+//==================== スタート ====================
+function init(){
+  resizeCanvas();
+  render();
+  enterField();
+  say("ここは アレフガルドの だいち。\nりゅうおうが せかいを やみに つつんでいる。\nやじるしキーで たびに でよう！");
+  requestAnimationFrame(loop);
+}
+// フォント読み込み後にサイズ確定
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>resizeCanvas()); }
+window.addEventListener("load", init);
+</script>
+</body>
+</html>
