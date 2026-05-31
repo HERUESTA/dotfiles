@@ -89,9 +89,14 @@
     40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(4px)}
   }
   .enemy-sprite{
-    font-size:58px;line-height:1;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));
-    margin-bottom:6px;
+    margin-bottom:6px;line-height:0;
   }
+  .enemy-sprite svg{
+    width:104px;height:104px;display:block;margin:0 auto;
+    filter:drop-shadow(0 8px 14px rgba(0,0,0,.55));
+    animation:bob 2.6s ease-in-out infinite;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
   .enemy-name{font-family:"Cinzel",serif;letter-spacing:.08em;font-size:18px;color:var(--ink);}
   .intent{
     display:inline-flex;align-items:center;gap:6px;
@@ -282,10 +287,58 @@ const CARDS = {
   focus:   {name:"気合い",       cost:0, kind:"skl", value:0,  icon:"✨", desc:"カードを2枚引く"},
 };
 const REWARD_POOL = ["bash","twin","wall","focus","strike","defend"];
+const SPRITES = {
+  // ぷにぷにスライム
+  slime:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="slimeG" cx="40%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#abf5b3"/><stop offset="60%" stop-color="#4bcb6b"/><stop offset="100%" stop-color="#279a4e"/>
+    </radialGradient></defs>
+    <path d="M18 64 C12 30 34 18 50 18 C66 18 88 30 82 64 C84 78 70 87 50 87 C30 87 16 78 18 64 Z" fill="url(#slimeG)" stroke="#1f7d40" stroke-width="2"/>
+    <ellipse cx="38" cy="33" rx="11" ry="6" fill="#fff" opacity=".55"/>
+    <circle cx="31" cy="61" r="5" fill="#ff9db0" opacity=".75"/><circle cx="69" cy="61" r="5" fill="#ff9db0" opacity=".75"/>
+    <ellipse cx="40" cy="52" rx="6" ry="8" fill="#173a22"/><ellipse cx="60" cy="52" rx="6" ry="8" fill="#173a22"/>
+    <circle cx="42" cy="49" r="2.3" fill="#fff"/><circle cx="62" cy="49" r="2.3" fill="#fff"/>
+    <path d="M44 64 Q50 70 56 64" fill="none" stroke="#173a22" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>`,
+  // いたずら子ゴブリン
+  goblin:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><radialGradient id="gobG" cx="40%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#d3ec84"/><stop offset="60%" stop-color="#8fc14a"/><stop offset="100%" stop-color="#5e9230"/>
+    </radialGradient></defs>
+    <path d="M22 46 L4 30 Q2 45 16 56 Z" fill="#8fc14a" stroke="#4f7a28" stroke-width="2"/>
+    <path d="M78 46 L96 30 Q98 45 84 56 Z" fill="#8fc14a" stroke="#4f7a28" stroke-width="2"/>
+    <path d="M24 52 C24 30 40 22 50 22 C60 22 76 30 76 52 C76 74 64 84 50 84 C36 84 24 74 24 52 Z" fill="url(#gobG)" stroke="#4f7a28" stroke-width="2"/>
+    <path d="M44 23 Q50 13 56 23" fill="none" stroke="#4f7a28" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="34" cy="61" r="5" fill="#ff9db0" opacity=".7"/><circle cx="66" cy="61" r="5" fill="#ff9db0" opacity=".7"/>
+    <ellipse cx="40" cy="50" rx="6.5" ry="8" fill="#fff" stroke="#3a5a1e" stroke-width="1.4"/>
+    <ellipse cx="60" cy="50" rx="6.5" ry="8" fill="#fff" stroke="#3a5a1e" stroke-width="1.4"/>
+    <circle cx="41" cy="51" r="3.4" fill="#2a1a0a"/><circle cx="61" cy="51" r="3.4" fill="#2a1a0a"/>
+    <circle cx="42.6" cy="49.6" r="1.2" fill="#fff"/><circle cx="62.6" cy="49.6" r="1.2" fill="#fff"/>
+    <path d="M48 58 Q50 62 52 58" fill="none" stroke="#4f7a28" stroke-width="2" stroke-linecap="round"/>
+    <path d="M42 68 Q50 74 58 68" fill="none" stroke="#3a5a1e" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M45 69 L44 73 L47 70 Z" fill="#fff"/><path d="M55 69 L56 73 L53 70 Z" fill="#fff"/>
+  </svg>`,
+  // まんまる石の番人
+  guardian:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="rockG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9794ad"/><stop offset="100%" stop-color="#56536b"/>
+    </linearGradient></defs>
+    <rect x="9" y="54" width="14" height="20" rx="6" fill="url(#rockG)" stroke="#3c3a4f" stroke-width="2"/>
+    <rect x="77" y="54" width="14" height="20" rx="6" fill="url(#rockG)" stroke="#3c3a4f" stroke-width="2"/>
+    <rect x="24" y="22" width="52" height="60" rx="16" fill="url(#rockG)" stroke="#3c3a4f" stroke-width="2.5"/>
+    <path d="M30 41 L38 47 L34 55" fill="none" stroke="#3c3a4f" stroke-width="1.5" opacity=".55"/>
+    <path d="M70 36 L64 44" fill="none" stroke="#3c3a4f" stroke-width="1.5" opacity=".55"/>
+    <circle cx="50" cy="33" r="5" fill="none" stroke="#e0b257" stroke-width="2"/><circle cx="50" cy="33" r="1.6" fill="#e0b257"/>
+    <circle cx="40" cy="53" r="6" fill="#0c2a30"/><circle cx="60" cy="53" r="6" fill="#0c2a30"/>
+    <circle cx="40" cy="53" r="3" fill="#9be9f4"/><circle cx="60" cy="53" r="3" fill="#9be9f4"/>
+    <circle cx="32" cy="61" r="3.5" fill="#ff9db0" opacity=".5"/><circle cx="68" cy="61" r="3.5" fill="#ff9db0" opacity=".5"/>
+    <path d="M43 67 Q50 72 57 67" fill="none" stroke="#2a2838" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>`,
+};
 const ENEMIES = [
-  {name:"スライム",       hp:28, sprite:"🟢"},
-  {name:"ゴブリン",       hp:40, sprite:"👹"},
-  {name:"スパイアの番人", hp:60, sprite:"🗿"},
+  {name:"スライム",       hp:28, sprite:SPRITES.slime},
+  {name:"ゴブリン",       hp:40, sprite:SPRITES.goblin},
+  {name:"スパイアの番人", hp:60, sprite:SPRITES.guardian},
 ];
 
 // ====== 状態 ======
@@ -533,4 +586,4 @@ document.getElementById("restart").addEventListener("click",()=>{
 newGame();
 </script>
 </body>
-</html>
+</html> 
