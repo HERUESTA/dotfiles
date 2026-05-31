@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スレスパ風 — 尖塔のカードバトル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Zen+Old+Mincho:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0c0a14;
+    --bg-1:#171326;
+    --stone:#221b33;
+    --stone-edge:#3a2d54;
+    --ink:#e9e2d0;
+    --ink-dim:#9c93a8;
+    --gold:#e0b257;
+    --gold-deep:#a8762a;
+    --ember:#e0533a;
+    --ember-glow:#ff7a4d;
+    --frost:#5fc8d8;
+    --frost-glow:#9be9f4;
+    --hp:#c0392b;
+    --hp-bg:#3a1414;
+    --shield:#6fb7d8;
+    --energy:#ffcf5a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Zen Old Mincho",serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 50% -10%, #2a2140 0%, transparent 55%),
+      radial-gradient(circle at 50% 120%, #1a1228 0%, transparent 50%),
+      linear-gradient(160deg,var(--bg-0),var(--bg-1));
+    min-height:100vh;
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+    overflow-x:hidden;
+  }
+  /* faint vertical "spire" light beams */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 80px, rgba(224,178,87,.018) 80px 81px);
+    mix-blend-mode:screen;
+  }
+
+  #stage{
+    width:min(880px,100%);
+    background:linear-gradient(180deg, rgba(34,27,51,.85), rgba(18,14,30,.92));
+    border:1px solid var(--stone-edge);
+    border-radius:18px;
+    box-shadow:0 30px 80px -20px #000, inset 0 1px 0 rgba(255,255,255,.05);
+    padding:22px 24px 26px;
+    position:relative;
+  }
+
+  header.title{
+    text-align:center;margin-bottom:6px;
+  }
+  header.title h1{
+    font-family:"Cinzel",serif;font-weight:900;
+    letter-spacing:.14em;
+    font-size:clamp(18px,3.4vw,26px);
+    color:var(--gold);
+    text-shadow:0 2px 18px rgba(224,178,87,.35);
+  }
+  .floor-tag{
+    font-size:12px;letter-spacing:.3em;color:var(--ink-dim);
+    text-transform:uppercase;margin-top:2px;
+  }
+
+  /* ---- 敵エリア ---- */
+  #enemy-zone{
+    margin:18px 0 10px;
+    min-height:160px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .enemy{
+    text-align:center;position:relative;transition:transform .12s;
+  }
+  .enemy.hit{animation:shake .32s;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)}
+    40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(4px)}
+  }
+  .enemy-sprite{
+    font-size:58px;line-height:1;filter:drop-shadow(0 8px 14px rgba(0,0,0,.6));
+    margin-bottom:6px;
+  }
+  .enemy-name{font-family:"Cinzel",serif;letter-spacing:.08em;font-size:18px;color:var(--ink);}
+  .intent{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:8px;padding:4px 12px;border-radius:20px;
+    font-size:14px;font-weight:600;
+    border:1px solid;background:rgba(0,0,0,.3);
+  }
+  .intent.attack{color:var(--ember-glow);border-color:rgba(224,83,58,.6);box-shadow:0 0 16px -4px var(--ember);}
+  .intent.block{color:var(--frost-glow);border-color:rgba(95,200,216,.6);box-shadow:0 0 16px -4px var(--frost);}
+
+  /* HP / shield 共通バー */
+  .bar{
+    width:240px;max-width:60vw;height:16px;border-radius:9px;
+    background:var(--hp-bg);border:1px solid rgba(0,0,0,.5);
+    margin:8px auto 0;position:relative;overflow:hidden;
+  }
+  .bar > i{
+    display:block;height:100%;background:linear-gradient(90deg,#e85b4a,var(--hp));
+    transition:width .35s ease;
+  }
+  .bar > span{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:11px;letter-spacing:.05em;color:#fff;text-shadow:0 1px 2px #000;font-weight:600;
+  }
+  .shield-badge{
+    position:absolute;top:-6px;right:-10px;
+    background:radial-gradient(circle at 35% 30%, #aee3f0, var(--shield));
+    color:#0b2a33;font-weight:700;font-size:13px;
+    width:30px;height:34px;display:flex;align-items:center;justify-content:center;
+    clip-path:polygon(50% 0,100% 22%,100% 70%,50% 100%,0 70%,0 22%);
+    box-shadow:0 3px 10px rgba(0,0,0,.5);
+  }
+
+  /* 浮かぶダメージ表記 */
+  .float{
+    position:absolute;left:50%;top:30%;transform:translateX(-50%);
+    font-family:"Cinzel",serif;font-weight:900;font-size:30px;
+    pointer-events:none;animation:rise 1s ease-out forwards;text-shadow:0 2px 6px #000;
+  }
+  .float.dmg{color:var(--ember-glow);}
+  .float.blk{color:var(--frost-glow);}
+  @keyframes rise{
+    0%{opacity:0;transform:translate(-50%,10px) scale(.6);}
+    20%{opacity:1;transform:translate(-50%,-6px) scale(1.15);}
+    100%{opacity:0;transform:translate(-50%,-54px) scale(1);}
+  }
+
+  /* ---- プレイヤーステータス ---- */
+  #player-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:rgba(0,0,0,.28);border:1px solid var(--stone-edge);
+    border-radius:12px;padding:10px 16px;margin-bottom:12px;flex-wrap:wrap;
+  }
+  .pstat{display:flex;align-items:center;gap:8px;font-size:14px;}
+  .pstat .lbl{color:var(--ink-dim);font-size:12px;letter-spacing:.1em;}
+  .energy-orbs{display:flex;gap:5px;}
+  .orb{
+    width:22px;height:22px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3c4, var(--energy) 60%, var(--gold-deep));
+    box-shadow:0 0 12px -2px var(--gold);border:1px solid #6b4d12;
+  }
+  .orb.empty{background:#2a2436;box-shadow:none;border-color:#3a3350;}
+  .mini-hp{width:150px;}
+  .pshield{color:var(--frost-glow);font-weight:700;}
+
+  /* ---- 手札 ---- */
+  #hand{
+    display:flex;gap:10px;justify-content:center;align-items:flex-end;
+    min-height:172px;flex-wrap:wrap;
+  }
+  .card{
+    width:108px;height:160px;border-radius:12px;cursor:pointer;
+    background:linear-gradient(170deg,#2c2440,#191228);
+    border:1px solid var(--stone-edge);
+    box-shadow:0 8px 18px -8px #000;
+    padding:8px;display:flex;flex-direction:column;
+    position:relative;transition:transform .15s, box-shadow .15s;
+    user-select:none;
+  }
+  .card:hover{transform:translateY(-14px) rotate(-1deg);box-shadow:0 18px 30px -10px #000;}
+  .card.atk{border-color:rgba(224,83,58,.55);}
+  .card.blk{border-color:rgba(95,200,216,.55);}
+  .card.skl{border-color:rgba(224,178,87,.55);}
+  .card.disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5);}
+  .card.disabled:hover{transform:none;box-shadow:0 8px 18px -8px #000;}
+  .cost{
+    position:absolute;top:-8px;left:-8px;width:30px;height:30px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #fff3c4, var(--energy) 60%, var(--gold-deep));
+    color:#3a2700;font-family:"Cinzel",serif;font-weight:900;font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 10px -1px var(--gold);border:1px solid #6b4d12;
+  }
+  .card .cname{
+    text-align:center;font-weight:700;font-size:14px;margin-top:4px;
+    border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:5px;
+  }
+  .card .cicon{font-size:34px;text-align:center;margin:auto 0;}
+  .card .cdesc{font-size:11px;color:var(--ink-dim);text-align:center;line-height:1.35;min-height:30px;}
+
+  /* ---- ボタン / ログ ---- */
+  #controls{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:12px;}
+  #log{font-size:13px;color:var(--ink-dim);min-height:20px;flex:1;font-style:italic;}
+  button.action{
+    font-family:"Cinzel",serif;font-weight:700;letter-spacing:.08em;
+    background:linear-gradient(180deg,#3a2d54,#241a38);
+    color:var(--gold);border:1px solid var(--gold-deep);
+    padding:11px 22px;border-radius:10px;cursor:pointer;font-size:14px;
+    box-shadow:0 4px 14px -4px #000, inset 0 1px 0 rgba(255,255,255,.07);
+    transition:transform .1s, box-shadow .15s;white-space:nowrap;
+  }
+  button.action:hover{transform:translateY(-2px);box-shadow:0 8px 20px -6px var(--gold-deep);}
+  button.action:active{transform:translateY(0);}
+  button.action:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+  /* ---- オーバーレイ ---- */
+  .overlay{
+    position:absolute;inset:0;border-radius:18px;
+    background:rgba(8,6,16,.92);backdrop-filter:blur(3px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;z-index:20;
+  }
+  .overlay h2{font-family:"Cinzel",serif;font-size:30px;letter-spacing:.1em;margin-bottom:6px;}
+  .overlay p{color:var(--ink-dim);margin-bottom:22px;max-width:460px;line-height:1.6;}
+  .win h2{color:var(--gold);text-shadow:0 0 30px var(--gold);}
+  .lose h2{color:var(--ember);text-shadow:0 0 30px var(--ember);}
+  .reward-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:18px;}
+  .hidden{display:none;}
+  .fade-in{animation:fade .4s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <header class="title">
+    <h1>尖塔のカードバトル</h1>
+    <div class="floor-tag" id="floor-tag">第 1 層</div>
+  </header>
+
+  <div id="enemy-zone"></div>
+
+  <div id="player-bar">
+    <div class="pstat">
+      <span class="lbl">英雄</span>
+      <div class="bar mini-hp"><i id="php-fill"></i><span id="php-text"></span></div>
+      <span class="pshield" id="pshield"></span>
+    </div>
+    <div class="pstat">
+      <span class="lbl">エネルギー</span>
+      <div class="energy-orbs" id="orbs"></div>
+    </div>
+    <div class="pstat">
+      <span class="lbl">山札</span><span id="pile-draw">0</span>
+      <span class="lbl" style="margin-left:8px">捨札</span><span id="pile-disc">0</span>
+    </div>
+  </div>
+
+  <div id="hand"></div>
+
+  <div id="controls">
+    <div id="log">尖塔の入口に立った。</div>
+    <button class="action" id="end-turn">ターン終了 ▸</button>
+  </div>
+
+  <!-- 報酬 -->
+  <div class="overlay hidden" id="reward-overlay">
+    <h2 style="color:var(--gold)">勝利の報酬</h2>
+    <p>カードを1枚選び、デッキを強化しよう。</p>
+    <div class="reward-cards" id="reward-cards"></div>
+    <button class="action" id="skip-reward">受け取らずに進む</button>
+  </div>
+
+  <!-- 終了画面 -->
+  <div class="overlay hidden" id="end-overlay">
+    <h2 id="end-title"></h2>
+    <p id="end-msg"></p>
+    <button class="action" id="restart">もう一度挑戦する</button>
+  </div>
+</div>
+
+<script>
+// ====== カード定義 ======
+const CARDS = {
+  strike:  {name:"ストライク",   cost:1, kind:"atk", value:6,  icon:"⚔️", desc:"敵に6ダメージ"},
+  defend:  {name:"ディフェンド", cost:1, kind:"blk", value:5,  icon:"🛡️", desc:"ブロック +5"},
+  bash:    {name:"強打",         cost:2, kind:"atk", value:12, icon:"💥", desc:"敵に12ダメージ"},
+  twin:    {name:"連撃",         cost:1, kind:"atk", value:4,  icon:"🗡️", desc:"4ダメージ×2回"},
+  wall:    {name:"鉄壁",         cost:2, kind:"blk", value:10, icon:"🏰", desc:"ブロック +10"},
+  focus:   {name:"気合い",       cost:0, kind:"skl", value:0,  icon:"✨", desc:"カードを2枚引く"},
+};
+const REWARD_POOL = ["bash","twin","wall","focus","strike","defend"];
+const ENEMIES = [
+  {name:"スライム",       hp:28, sprite:"🟢"},
+  {name:"ゴブリン",       hp:40, sprite:"👹"},
+  {name:"スパイアの番人", hp:60, sprite:"🗿"},
+];
+
+// ====== 状態 ======
+let S;
+function newGame(){
+  S = {
+    player:{hp:60, maxHp:60, block:0, energy:3, maxEnergy:3,
+            deck:[], draw:[], hand:[], disc:[]},
+    enemyIndex:0,
+    enemy:null,
+    busy:false,
+  };
+  // 初期デッキ
+  for(let i=0;i<4;i++) S.player.deck.push("strike");
+  for(let i=0;i<4;i++) S.player.deck.push("defend");
+  S.player.deck.push("bash");
+  startEnemy();
+}
+
+function startEnemy(){
+  const def = ENEMIES[S.enemyIndex];
+  S.enemy = {name:def.name, hp:def.hp, maxHp:def.hp, block:0, sprite:def.sprite, intent:null};
+  // デッキを山札へ
+  S.player.draw = shuffle([...S.player.deck]);
+  S.player.hand = [];
+  S.player.disc = [];
+  decideIntent();
+  log(`第${S.enemyIndex+1}層 — ${S.enemy.name} があらわれた！`);
+  startTurn();
+}
+
+// ====== ユーティリティ ======
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function log(t){document.getElementById("log").textContent=t;}
+
+// ====== ターン進行 ======
+function startTurn(){
+  const p=S.player;
+  p.block=0; p.energy=p.maxEnergy;
+  drawCards(5);
+  render();
+}
+function drawCards(n){
+  const p=S.player;
+  for(let i=0;i<n;i++){
+    if(p.draw.length===0){
+      if(p.disc.length===0) break;
+      p.draw=shuffle(p.disc); p.disc=[];
+    }
+    p.hand.push(p.draw.pop());
+  }
+}
+function decideIntent(){
+  const r=Math.random()*100;
+  if(r<55)       S.enemy.intent={type:"attack", amt:8+(Math.random()*6|0)};
+  else if(r<80)  S.enemy.intent={type:"attack", amt:4+(Math.random()*4|0)};
+  else           S.enemy.intent={type:"block",  amt:8};
+}
+
+function playCard(idx){
+  if(S.busy) return;
+  const p=S.player, id=p.hand[idx], c=CARDS[id];
+  if(!c || c.cost>p.energy) return;
+  p.energy-=c.cost;
+  p.hand.splice(idx,1);
+
+  if(id==="twin"){
+    dealDamage(c.value); dealDamage(c.value);
+    log(`連撃！ ${c.value}ダメージ×2`);
+  }else if(id==="focus"){
+    drawCards(2); log("気合い！ カードを2枚引いた");
+  }else if(c.kind==="atk"){
+    dealDamage(c.value); log(`${c.name}！ ${c.value}ダメージ`);
+  }else if(c.kind==="blk"){
+    p.block+=c.value; floatText("blk","+"+c.value+"🛡",true);
+    log(`${c.name}！ ブロック +${c.value}`);
+  }
+  p.disc.push(id);
+  render();
+  if(S.enemy.hp<=0){ onEnemyDefeated(); }
+}
+
+function dealDamage(dmg){
+  const e=S.enemy;
+  const absorbed=Math.min(e.block,dmg);
+  e.block-=absorbed;
+  e.hp=Math.max(0,e.hp-(dmg-absorbed));
+  floatText("dmg","-"+dmg,false);
+  const el=document.querySelector(".enemy");
+  if(el){el.classList.remove("hit");void el.offsetWidth;el.classList.add("hit");}
+}
+
+function endTurn(){
+  if(S.busy) return;
+  // 手札を捨て札へ
+  S.player.disc.push(...S.player.hand);
+  S.player.hand=[];
+  S.busy=true;
+  render();
+  setTimeout(enemyTurn,450);
+}
+
+function enemyTurn(){
+  const e=S.enemy, p=S.player;
+  e.block=0; // 敵のブロックはターン開始時に消滅
+  if(e.intent.type==="attack"){
+    const dmg=e.intent.amt;
+    const absorbed=Math.min(p.block,dmg);
+    p.block-=absorbed;
+    p.hp=Math.max(0,p.hp-(dmg-absorbed));
+    log(`${e.name}の攻撃！ ${dmg-absorbed}ダメージを受けた`);
+  }else{
+    e.block+=e.intent.amt;
+    log(`${e.name}は身を守った（ブロック +${e.intent.amt}）`);
+  }
+  decideIntent();
+  render();
+  if(p.hp<=0){ gameOver(false); return; }
+  S.busy=false;
+  setTimeout(startTurn,400);
+}
+
+// ====== 勝敗・報酬 ======
+function onEnemyDefeated(){
+  S.busy=true;
+  log(`${S.enemy.name}を倒した！`);
+  if(S.enemyIndex===ENEMIES.length-1){ gameOver(true); return; }
+  setTimeout(showReward,500);
+}
+
+function showReward(){
+  const pool=shuffle([...REWARD_POOL]).slice(0,3);
+  const box=document.getElementById("reward-cards");
+  box.innerHTML="";
+  pool.forEach(id=>{
+    box.appendChild(buildCardEl(id,()=>{
+      S.player.deck.push(id);
+      finishReward(`${CARDS[id].name}をデッキに加えた！`);
+    }));
+  });
+  document.getElementById("reward-overlay").classList.remove("hidden");
+}
+function finishReward(msg){
+  document.getElementById("reward-overlay").classList.add("hidden");
+  // 戦闘後に少し回復
+  S.player.hp=Math.min(S.player.maxHp,S.player.hp+10);
+  S.enemyIndex++;
+  S.busy=false;
+  startEnemy();
+  log(msg+" / 休息でHPが10回復した");
+}
+
+function gameOver(win){
+  const ov=document.getElementById("end-overlay");
+  ov.classList.remove("hidden","win","lose");
+  ov.classList.add(win?"win":"lose");
+  document.getElementById("end-title").textContent = win?"尖塔制覇！":"力尽きた…";
+  document.getElementById("end-msg").textContent = win
+    ? "3層すべての敵を退け、尖塔の頂へ辿り着いた。見事な戦いだった。"
+    : "あなたはここで倒れた。デッキを組み直し、再び挑もう。";
+}
+
+// ====== 描画 ======
+function buildCardEl(id, onClick, playable=true){
+  const c=CARDS[id];
+  const kindClass={atk:"atk",blk:"blk",skl:"skl"}[c.kind];
+  const el=document.createElement("div");
+  el.className="card "+kindClass+(playable?"":" disabled");
+  el.innerHTML=`
+    <div class="cost">${c.cost}</div>
+    <div class="cname">${c.name}</div>
+    <div class="cicon">${c.icon}</div>
+    <div class="cdesc">${c.desc}</div>`;
+  if(playable && onClick) el.addEventListener("click",onClick);
+  return el;
+}
+
+function render(){
+  const p=S.player, e=S.enemy;
+  document.getElementById("floor-tag").textContent=`第 ${S.enemyIndex+1} 層`;
+
+  // 敵
+  const ez=document.getElementById("enemy-zone");
+  const intentClass=e.intent.type==="attack"?"attack":"block";
+  const intentTxt=e.intent.type==="attack"
+    ? `⚔️ 攻撃 ${e.intent.amt}`
+    : `🛡️ 防御 ${e.intent.amt}`;
+  const pct=Math.max(0,e.hp/e.maxHp*100);
+  ez.innerHTML=`
+    <div class="enemy fade-in">
+      ${e.block>0?`<div class="shield-badge">${e.block}</div>`:""}
+      <div class="enemy-sprite">${e.sprite}</div>
+      <div class="enemy-name">${e.name}</div>
+      <div class="bar"><i style="width:${pct}%"></i><span>${e.hp} / ${e.maxHp}</span></div>
+      <div class="intent ${intentClass}">${intentTxt}</div>
+    </div>`;
+
+  // プレイヤーHP
+  const hpct=Math.max(0,p.hp/p.maxHp*100);
+  document.getElementById("php-fill").style.width=hpct+"%";
+  document.getElementById("php-text").textContent=`${p.hp} / ${p.maxHp}`;
+  document.getElementById("pshield").textContent = p.block>0?`🛡 ${p.block}`:"";
+
+  // エネルギー
+  const orbs=document.getElementById("orbs");
+  orbs.innerHTML="";
+  for(let i=0;i<p.maxEnergy;i++){
+    const o=document.createElement("div");
+    o.className="orb"+(i<p.energy?"":" empty");
+    orbs.appendChild(o);
+  }
+  document.getElementById("pile-draw").textContent=p.draw.length;
+  document.getElementById("pile-disc").textContent=p.disc.length;
+
+  // 手札
+  const hand=document.getElementById("hand");
+  hand.innerHTML="";
+  p.hand.forEach((id,idx)=>{
+    const c=CARDS[id];
+    const playable=!S.busy && c.cost<=p.energy;
+    hand.appendChild(buildCardEl(id, ()=>playCard(idx), playable));
+  });
+
+  document.getElementById("end-turn").disabled=S.busy;
+}
+
+function floatText(cls,txt){
+  const ez=document.getElementById("enemy-zone");
+  const s=document.createElement("div");
+  s.className="float "+cls;
+  s.textContent=txt;
+  ez.appendChild(s);
+  setTimeout(()=>s.remove(),1000);
+}
+
+// ====== イベント ======
+document.getElementById("end-turn").addEventListener("click",endTurn);
+document.getElementById("skip-reward").addEventListener("click",()=>finishReward("報酬を受け取らなかった"));
+document.getElementById("restart").addEventListener("click",()=>{
+  document.getElementById("end-overlay").classList.add("hidden");
+  newGame();
+});
+
+// 開始
+newGame();
+</script>
+</body>
+</html>
