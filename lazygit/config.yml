@@ -1,0 +1,6 @@
+customCommands:
+  - key: 'c'
+    context: 'files'
+    description: 'cz-git (czg) でコミットメッセージを生成'
+    command: 'czg emoji'
+    output: terminal
