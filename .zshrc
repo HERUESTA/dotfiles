@@ -32,6 +32,7 @@ source $ZSH/oh-my-zsh.sh
 
 . "$HOME/.local/bin/env"
 export PATH="$(brew --prefix node@22)/bin:$PATH"
+export NODE_PATH="$(npm root -g)"
 
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init - zsh)"
