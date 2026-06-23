@@ -3,7 +3,6 @@ export ZSH="$HOME/.oh-my-zsh"
 export EDITOR="nvim"
 
 ZSH_THEME="eastwood"
-DISABLE_AUTO_TITLE="true"
 
 plugins=(
   git
@@ -53,12 +52,8 @@ bindkey "^N" history-beginning-search-forward-end
 bindkey "^P" history-beginning-search-backward-end
 alias lzd='lazydocker'
 
-# ターミナルのタブ名をカレントディレクトリに固定する
-autoload -Uz add-zsh-hook
-function set_title_cwd() {
-  # %1~ はカレントディレクトリの末尾1階層だけを表示
-  print -Pn "\e]0;%1~\a"
+# rspecや各種Dockerコマンドの省略化
+# 例
+dcspec() {
+  docker compose run --rm web bundle exec rspec "$@"
 }
-add-zsh-hook precmd set_title_cwd
-add-zsh-hook preexec set_title_cwd
-add-zsh-hook chpwd set_title_cwd
