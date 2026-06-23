@@ -52,6 +52,6 @@ module.exports = defineConfig({
       footer: "Issue 番号などを入力してください:",
       confirmCommit: "この内容でコミットしますか?",
     },
-    skipQuestions: ["scope", "body", "breaking", "footerPrefix"],
+    skipQuestions: ["scope", "body", "breaking", "footerPrefix", "footer"],
   },
 });
