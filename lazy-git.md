@@ -16,15 +16,15 @@ npm install -g czg cz-git
 
 ```bash
 LAZYGIT_CONFIG_DIR="$(lazygit -cd)"
-mkdir -p "$LAZYGIT_CONFIG_DIR"
-ln -sfn ~/dotfiles/lazygit/config.yml "$LAZYGIT_CONFIG_DIR/config.yml"
+cp "$LAZYGIT_CONFIG_DIR/config.yml" "$LAZYGIT_CONFIG_DIR/config.yml.bak"
 ```
 
-既存の config がある場合は、先にバックアップする。
+既存の config がある場合は、先にバックアップする。ない場合は次のリンク手順へ進む。
 
 ```bash
 LAZYGIT_CONFIG_DIR="$(lazygit -cd)"
-cp "$LAZYGIT_CONFIG_DIR/config.yml" "$LAZYGIT_CONFIG_DIR/config.yml.bak"
+mkdir -p "$LAZYGIT_CONFIG_DIR"
+ln -sfn ~/dotfiles/lazygit/config.yml "$LAZYGIT_CONFIG_DIR/config.yml"
 ```
 
 ## 4. commitlint.config.js をリンク
