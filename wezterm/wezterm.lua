@@ -32,6 +32,17 @@ local SOLID_LEFT_ARROW = wezterm.nerdfonts.ple_lower_right_triangle
 local SOLID_RIGHT_ARROW = wezterm.nerdfonts.ple_upper_left_triangle
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
+	local pane = tab.active_pane
+	local title = pane.foreground_process_name or pane.title
+	local cwd_uri = pane.current_working_dir
+	if cwd_uri then
+		local cwd = cwd_uri.file_path or tostring(cwd_uri)
+		local dir = cwd:match("([^/]+)/?$")
+		if dir and dir ~= "" then
+			title = dir
+		end
+	end
+
 	local background = "#5c6d74"
 	local foreground = "#FFFFFF"
 	local edge_background = "none"
@@ -42,7 +53,7 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 	end
 
 	local edge_foreground = background
-	local title = "   " .. wezterm.truncate_right(tab.active_pane.title, max_width - 1) .. "   "
+	local title_text = "   " .. wezterm.truncate_right(title, max_width - 1) .. "   "
 
 	return {
 		{ Background = { Color = edge_background } },
@@ -50,7 +61,7 @@ wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_wid
 		{ Text = SOLID_LEFT_ARROW },
 		{ Background = { Color = background } },
 		{ Foreground = { Color = foreground } },
-		{ Text = title },
+		{ Text = title_text },
 		{ Background = { Color = edge_background } },
 		{ Foreground = { Color = edge_foreground } },
 		{ Text = SOLID_RIGHT_ARROW },
