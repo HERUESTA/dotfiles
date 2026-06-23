@@ -20,9 +20,15 @@ export NODE_PATH="$(npm root -g)"
 
 → `dotfiles/.zshrc` に追加済み
 
-## 3. commitlint.config.js を作成
+## 3. commitlint.config.js を配置
 
-`~/commitlint.config.js` に `cz-git` の `defineConfig` を使い、コミット種別一覧・絵文字・プロンプトの文言などを定義する。
+この dotfiles では `commitlint.config.js` を管理している。`~/commitlint.config.js` として読み込めるように symlink する。
+
+```bash
+ln -sfn ~/dotfiles/commitlint.config.js ~/commitlint.config.js
+```
+
+`commitlint.config.js` では `cz-git` の `defineConfig` を使い、コミット種別一覧・絵文字・プロンプトの文言などを定義している。
 
 参考:
 - https://cz-git.qbb.sh/

@@ -5,8 +5,8 @@ return {
     event = "InsertEnter",
     opts = {
       suggestion = {
-        enabled = true,
-        auto_trigger = true,
+        enabled = false,
+        auto_trigger = false,
         keymap = {
           accept = "<Tab>",
           dismiss = "<C-]>",
