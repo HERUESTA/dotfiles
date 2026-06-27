@@ -55,3 +55,4 @@ nvim
 
 Neovim で `:LazyGit` または `<leader>gg` を実行し、lazygit の files view で `c` キーを押して `czg emoji` が起動すれば完了。
 ブランチを曖昧検索して切り替えたいときは、lazygit 上で `B` キーを押して fzf からブランチを選択する。
+現在のブランチの PR を操作するときは、lazygit 上で `<C-g>` を押して fzf から表示/作成とブラウザ/ターミナルを選択する。

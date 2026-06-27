@@ -12,6 +12,27 @@ customCommands:
       '
     output: terminal
 
+  - key: "<c-g>"
+    context: "global"
+    description: "現在のブランチの GitHub PR 操作を選択"
+    command: |
+      bash -lc '
+        action=$(printf "%s\n" \
+          "view: browser" \
+          "view: terminal" \
+          "create: browser" \
+          "create: terminal" |
+          fzf --prompt="pr> ")
+
+        case "$action" in
+          "view: browser") gh pr view --web ;;
+          "view: terminal") gh pr view ;;
+          "create: browser") gh pr create --web ;;
+          "create: terminal") gh pr create ;;
+        esac
+      '
+    output: terminal
+
   - key: "c"
     context: "files"
     description: "cz-git (czg) でコミットメッセージを生成"
