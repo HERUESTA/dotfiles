@@ -1,9 +1,9 @@
 # 新しいPCで dotfiles を pull した後にやること
 
-## 1. lazygit CLI をインストール
+## 1. lazygit CLI と fzf をインストール
 
 ```bash
-brew install lazygit
+brew install lazygit fzf
 ```
 
 ## 2. czg / cz-git をグローバルインストール
@@ -54,3 +54,4 @@ nvim
 ```
 
 Neovim で `:LazyGit` または `<leader>gg` を実行し、lazygit の files view で `c` キーを押して `czg emoji` が起動すれば完了。
+ブランチを曖昧検索して切り替えたいときは、lazygit 上で `B` キーを押して fzf からブランチを選択する。
