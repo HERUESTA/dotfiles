@@ -50,10 +50,20 @@ zle -N history-beginning-search-backward-end history-search-end
 zle -N history-beginning-search-forward-end history-search-end
 bindkey "^N" history-beginning-search-forward-end
 bindkey "^P" history-beginning-search-backward-end
-alias lzd='lazydocker'
+
+# lzdコマンド実行時にタブ名をセット
+unalias lzd 2>/dev/null
+lzd() {
+  echo -ne "\033]0;lzd\007"
+  lazydocker "$@"
+  echo -ne "\033]0;lzd\007"
+}
 
 # rspecや各種Dockerコマンドの省略化
 # 例
 dcspec() {
   docker compose run --rm web bundle exec rspec "$@"
 }
+
+# タスク管理TUI用
+alias tt="taskwarrior-tui"
