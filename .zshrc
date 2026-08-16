@@ -67,3 +67,5 @@ dcspec() {
 
 # タスク管理TUI用
 alias tt="taskwarrior-tui"
+alias inbox="taskwarrior-tui -r inbox"
+alias na="taskwarrior-tui -r na"
