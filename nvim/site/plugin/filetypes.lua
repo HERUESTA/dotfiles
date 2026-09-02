@@ -1,0 +1,18 @@
+-- neotestの子プロセスにファイルタイプ登録を届けるためのファイル。
+--
+-- .ts はNeovim標準では中身の1行目を見る関数判定（XMLかTypeScriptか）になっており
+-- (runtime/lua/vim/filetype.lua: ts = detect_line1('<%?xml', 'xml', 'typescript'))、
+-- バッファ番号を伴わない vim.filetype.match({ filename = ... }) では nil が返る。
+-- neotestはこの形で言語を引くため、放置すると.tsのテストが1件も展開されない。
+--
+-- neotestは探索を `nvim -u NONE` の子プロセスで行い、ユーザー設定を読まない。
+-- ただし子に対して `runtime! plugin/filetypes.lua` を明示的に実行する
+-- (neotest/lua/neotest/lib/subprocess.lua:178)。これが子へ登録を届ける正規の口。
+-- 子のrtpには設定ディレクトリは入らず、treesitterパーサのあるsiteディレクトリが入るため、
+-- このファイルは以下へシンボリックリンクして初めて効く:
+--
+--   ln -s ~/dotfiles/nvim/site/plugin/filetypes.lua \
+--         ~/.local/share/nvim/site/plugin/filetypes.lua
+--
+-- 親プロセスもsiteディレクトリをrtpに持つので、リンク1本で親子とも解決する。
+vim.filetype.add({ extension = { ts = "typescript" } })
