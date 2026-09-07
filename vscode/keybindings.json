@@ -1,0 +1,20 @@
+// キーバインドをここに配置することで、デフォルトを上書きできます
+//
+// このファイルが実体。VSCode 側からはシンボリックリンクで参照する。
+// 新しいマシンでのセットアップ:
+//
+//   ln -s ~/dotfiles/vscode/keybindings.json \
+//     "$HOME/Library/Application Support/Code/User/keybindings.json"
+//
+// 既にファイルがある場合は先に退避する:
+//
+//   mv "$HOME/Library/Application Support/Code/User/keybindings.json" \
+//     "$HOME/Library/Application Support/Code/User/keybindings.json.bak"
+[
+  {
+    // Claude Code を既存のチャットで開く（新規作成にしたい場合は
+    // claude-vscode.editor.openLast を使う）
+    "key": "shift+cmd+i",
+    "command": "claude-vscode.focus"
+  }
+]
