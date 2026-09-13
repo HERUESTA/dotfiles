@@ -33,7 +33,7 @@ customCommands:
       '
     output: terminal
 
-  # 形式: <絵文字> <type>(<scope>)!: <メッセージ>
+  # 形式: <絵文字> <type>!: <メッセージ>
   # condition を使うため lazygit v0.61.0 以上が必要
   - key: "c"
     context: "files"
@@ -43,28 +43,88 @@ customCommands:
         key: "Type"
         title: "type を選択"
         options:
-          - { name: "feat",     description: "✨ 新機能",             value: "✨ feat" }
-          - { name: "fix",      description: "🐛 バグ修正",           value: "🐛 fix" }
-          - { name: "docs",     description: "📝 ドキュメント",       value: "📝 docs" }
-          - { name: "style",    description: "🎨 フォーマット",       value: "🎨 style" }
-          - { name: "refactor", description: "♻️ リファクタリング",   value: "♻️ refactor" }
+          - { name: "feat",     description: "✨ 新機能", value: "✨ feat" }
+          - { name: "fix",      description: "🐛 バグ修正", value: "🐛 fix" }
+          - { name: "docs",     description: "📝 ドキュメント", value: "📝 docs" }
+          - { name: "style",    description: "🎨 構造・フォーマット", value: "🎨 style" }
+          - { name: "refactor", description: "♻️ リファクタリング", value: "♻️ refactor" }
           - { name: "perf",     description: "⚡️ パフォーマンス改善", value: "⚡️ perf" }
-          - { name: "test",     description: "✅ テスト",             value: "✅ test" }
-          - { name: "build",    description: "📦️ ビルド・依存関係",   value: "📦️ build" }
-          - { name: "ci",       description: "👷 CI",                 value: "👷 ci" }
-          - { name: "chore",    description: "🔧 雑務・設定",         value: "🔧 chore" }
-      # 同一 type で絵文字を使い分けるプロンプト。
-      # 他の type に増やすときは、condition 付きの menu をもう 1 つ足し、command 側で Variant と同様に上書きする。
+          - { name: "test",     description: "✅ テスト", value: "✅ test" }
+          - { name: "build",    description: "📦️ ビルド成果物", value: "📦️ build" }
+          - { name: "ci",       description: "👷 CI ビルドシステム", value: "👷 ci" }
+          - { name: "chore",    description: "🔧 設定ファイル", value: "🔧 chore" }
+          - { name: "revert",   description: "⏪️ 取り消し", value: "⏪️ revert" }
+      # type ごとの絵文字の選択。選んだ type のメニューだけが表示される（先頭が既定の絵文字）。
+      # key を type ごとに分けているのは、スキップされたメニューの空文字列で選択値を上書きしないため。
+      # 候補を増やすときは options に 1 行足す。候補のない type にメニューを足すときは command の printf にも key を足す。
       - type: "menu"
-        key: "Variant"
-        title: "修正の緊急度"
+        key: "FeatEmoji"
+        title: "feat の絵文字を選択"
+        condition: '{{ eq .Form.Type "✨ feat" }}'
+        options:
+          - { name: "✨", description: "新機能", value: "✨ feat" }
+          - { name: "🎉", description: "プロジェクト開始", value: "🎉 feat" }
+      - type: "menu"
+        key: "FixEmoji"
+        title: "fix の絵文字を選択"
         condition: '{{ eq .Form.Type "🐛 fix" }}'
         options:
-          - { name: "通常",   description: "🐛 軽微な修正", value: "" }
-          - { name: "hotfix", description: "🚑 緊急の修正", value: "🚑 fix" }
-      - type: "input"
-        key: "Scope"
-        title: "scope（空欄可）"
+          - { name: "🐛", description: "バグ修正", value: "🐛 fix" }
+          - { name: "🚑️", description: "緊急のホットフィックス", value: "🚑️ fix" }
+          - { name: "🩹", description: "軽微な修正", value: "🩹 fix" }
+          - { name: "✏️", description: "typo 修正", value: "✏️ fix" }
+      - type: "menu"
+        key: "DocsEmoji"
+        title: "docs の絵文字を選択"
+        condition: '{{ eq .Form.Type "📝 docs" }}'
+        options:
+          - { name: "📝", description: "ドキュメント", value: "📝 docs" }
+          - { name: "💡", description: "コード内コメント", value: "💡 docs" }
+      - type: "menu"
+        key: "StyleEmoji"
+        title: "style の絵文字を選択"
+        condition: '{{ eq .Form.Type "🎨 style" }}'
+        options:
+          - { name: "🎨", description: "構造・フォーマット", value: "🎨 style" }
+          - { name: "💄", description: "UI・スタイルファイル", value: "💄 style" }
+      - type: "menu"
+        key: "RefactorEmoji"
+        title: "refactor の絵文字を選択"
+        condition: '{{ eq .Form.Type "♻️ refactor" }}'
+        options:
+          - { name: "♻️", description: "リファクタリング", value: "♻️ refactor" }
+          - { name: "🏗️", description: "アーキテクチャの変更", value: "🏗️ refactor" }
+      - type: "menu"
+        key: "TestEmoji"
+        title: "test の絵文字を選択"
+        condition: '{{ eq .Form.Type "✅ test" }}'
+        options:
+          - { name: "✅", description: "テスト", value: "✅ test" }
+          - { name: "🧪", description: "失敗するテストの追加", value: "🧪 test" }
+      - type: "menu"
+        key: "BuildEmoji"
+        title: "build の絵文字を選択"
+        condition: '{{ eq .Form.Type "📦️ build" }}'
+        options:
+          - { name: "📦️", description: "ビルド成果物", value: "📦️ build" }
+          - { name: "⬆️", description: "依存の更新", value: "⬆️ build" }
+          - { name: "➕", description: "依存の追加", value: "➕ build" }
+          - { name: "➖", description: "依存の削除", value: "➖ build" }
+      - type: "menu"
+        key: "CiEmoji"
+        title: "ci の絵文字を選択"
+        condition: '{{ eq .Form.Type "👷 ci" }}'
+        options:
+          - { name: "👷", description: "CI ビルドシステム", value: "👷 ci" }
+          - { name: "💚", description: "CI の修正", value: "💚 ci" }
+      - type: "menu"
+        key: "ChoreEmoji"
+        title: "chore の絵文字を選択"
+        condition: '{{ eq .Form.Type "🔧 chore" }}'
+        options:
+          - { name: "🔧", description: "設定ファイル", value: "🔧 chore" }
+          - { name: "🔥", description: "コード・ファイルの削除", value: "🔥 chore" }
+          - { name: "⬆️", description: "依存の更新", value: "⬆️ chore" }
       - type: "menu"
         key: "Breaking"
         title: "破壊的変更?"
@@ -74,10 +134,14 @@ customCommands:
       - type: "input"
         key: "Message"
         title: "コミットメッセージ"
-    # TODO(human): メッセージが空のときはコミットせずに中止する
+    # 表示される絵文字メニューは多くても 1 つなので、全部をつなげると選ばれた値だけが残る。空なら Type の既定を使う。
+    # メッセージが空（空白のみを含む）ならコミットせずに中止する。
+    # lazygit は $SHELL -c で実行するため、PC ごとにシェルが違っても動くよう POSIX sh の構文だけを使う。
     command: >-
       {{- $type := .Form.Type -}}
-      {{- if .Form.Variant }}{{ $type = .Form.Variant }}{{ end -}}
-      {{- $scope := "" -}}
-      {{- if .Form.Scope }}{{ $scope = printf "(%s)" .Form.Scope }}{{ end -}}
-      git commit -m {{ printf "%s%s%s: %s" $type $scope .Form.Breaking .Form.Message | quote }}
+      {{- $emoji := printf "%s%s%s%s%s%s%s%s%s" .Form.FeatEmoji .Form.FixEmoji .Form.DocsEmoji .Form.StyleEmoji .Form.RefactorEmoji .Form.TestEmoji .Form.BuildEmoji .Form.CiEmoji .Form.ChoreEmoji -}}
+      {{- if $emoji }}{{ $type = $emoji }}{{ end -}}
+      if [ -z "$(printf '%s' {{ .Form.Message | quote }} | tr -d '[:space:]')" ]; then
+      echo 'コミットメッセージが空のため中止しました' >&2; exit 1;
+      fi;
+      git commit -m {{ printf "%s%s: %s" $type .Form.Breaking .Form.Message | quote }}
