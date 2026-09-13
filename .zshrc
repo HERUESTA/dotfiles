@@ -12,21 +12,24 @@ plugins=(
   copyfile
 )
 
-cd_git_repo() {
-  local selected="$(ghq list | fzf)"
-
-  if [[ -n "$selected" ]]; then
-    cd "$(ghq root)/$selected"
-  fi
+function ghq-nvim() {
+  local dir
+  dir=$(ghq list -p | fzf --prompt='repo > ' --query "$LBUFFER") || return
+  BUFFER="cd ${dir} && nvim ."
+  zle accept-line
 }
+zle -N ghq-nvim
+bindkey '^]' ghq-nvim
 
-fbrr() {
-  local branches branch
-  branches=$(git branch --all | grep -v HEAD) &&
-  branch=$(echo "$branches" |
-           fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-  git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+# リポジトリへ移動だけする
+function ghq-cd() {
+  local dir
+  dir=$(ghq list -p | fzf --prompt='cd > ' --query "$LBUFFER") || return
+  BUFFER="cd ${dir}"
+  zle accept-line
 }
+zle -N ghq-cd
+bindkey '^g' ghq-cd
 
 source $ZSH/oh-my-zsh.sh
 
