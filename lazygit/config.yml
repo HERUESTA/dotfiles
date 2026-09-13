@@ -33,8 +33,51 @@ customCommands:
       '
     output: terminal
 
+  # 形式: <絵文字> <type>(<scope>)!: <メッセージ>
+  # condition を使うため lazygit v0.61.0 以上が必要
   - key: "c"
     context: "files"
-    description: "cz-git (czg) でコミットメッセージを生成"
-    command: "czg emoji"
-    output: terminal
+    description: "Conventional Commit + gitmoji"
+    prompts:
+      - type: "menu"
+        key: "Type"
+        title: "type を選択"
+        options:
+          - { name: "feat",     description: "✨ 新機能",             value: "✨ feat" }
+          - { name: "fix",      description: "🐛 バグ修正",           value: "🐛 fix" }
+          - { name: "docs",     description: "📝 ドキュメント",       value: "📝 docs" }
+          - { name: "style",    description: "🎨 フォーマット",       value: "🎨 style" }
+          - { name: "refactor", description: "♻️ リファクタリング",   value: "♻️ refactor" }
+          - { name: "perf",     description: "⚡️ パフォーマンス改善", value: "⚡️ perf" }
+          - { name: "test",     description: "✅ テスト",             value: "✅ test" }
+          - { name: "build",    description: "📦️ ビルド・依存関係",   value: "📦️ build" }
+          - { name: "ci",       description: "👷 CI",                 value: "👷 ci" }
+          - { name: "chore",    description: "🔧 雑務・設定",         value: "🔧 chore" }
+      # 同一 type で絵文字を使い分けるプロンプト。
+      # 他の type に増やすときは、condition 付きの menu をもう 1 つ足し、command 側で Variant と同様に上書きする。
+      - type: "menu"
+        key: "Variant"
+        title: "修正の緊急度"
+        condition: '{{ eq .Form.Type "🐛 fix" }}'
+        options:
+          - { name: "通常",   description: "🐛 軽微な修正", value: "" }
+          - { name: "hotfix", description: "🚑 緊急の修正", value: "🚑 fix" }
+      - type: "input"
+        key: "Scope"
+        title: "scope（空欄可）"
+      - type: "menu"
+        key: "Breaking"
+        title: "破壊的変更?"
+        options:
+          - { name: "いいえ", value: "" }
+          - { name: "はい",   value: "!" }
+      - type: "input"
+        key: "Message"
+        title: "コミットメッセージ"
+    # TODO(human): メッセージが空のときはコミットせずに中止する
+    command: >-
+      {{- $type := .Form.Type -}}
+      {{- if .Form.Variant }}{{ $type = .Form.Variant }}{{ end -}}
+      {{- $scope := "" -}}
+      {{- if .Form.Scope }}{{ $scope = printf "(%s)" .Form.Scope }}{{ end -}}
+      git commit -m {{ printf "%s%s%s: %s" $type $scope .Form.Breaking .Form.Message | quote }}
