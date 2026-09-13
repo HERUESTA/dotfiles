@@ -33,6 +33,8 @@ bindkey '^g' ghq-cd
 
 source $ZSH/oh-my-zsh.sh
 
+alias vi="nvim"
+
 . "$HOME/.local/bin/env"
 export PATH="$(brew --prefix node@22)/bin:$PATH"
 export NODE_PATH="$(npm root -g)"
