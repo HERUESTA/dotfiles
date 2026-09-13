@@ -33,7 +33,7 @@ customCommands:
       '
     output: terminal
 
-  # 形式: <絵文字> <type>!: <メッセージ>
+  # 形式: <絵文字> <type>: <メッセージ>
   # condition を使うため lazygit v0.61.0 以上が必要
   - key: "c"
     context: "files"
@@ -125,12 +125,6 @@ customCommands:
           - { name: "🔧", description: "設定ファイル", value: "🔧 chore" }
           - { name: "🔥", description: "コード・ファイルの削除", value: "🔥 chore" }
           - { name: "⬆️", description: "依存の更新", value: "⬆️ chore" }
-      - type: "menu"
-        key: "Breaking"
-        title: "破壊的変更?"
-        options:
-          - { name: "いいえ", value: "" }
-          - { name: "はい",   value: "!" }
       - type: "input"
         key: "Message"
         title: "コミットメッセージ"
@@ -144,4 +138,4 @@ customCommands:
       if [ -z "$(printf '%s' {{ .Form.Message | quote }} | tr -d '[:space:]')" ]; then
       echo 'コミットメッセージが空のため中止しました' >&2; exit 1;
       fi;
-      git commit -m {{ printf "%s%s: %s" $type .Form.Breaking .Form.Message | quote }}
+      git commit -m {{ printf "%s: %s" $type .Form.Message | quote }}
