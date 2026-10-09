@@ -1,0 +1,133 @@
+// VSCode のユーザー設定
+//
+// このファイルが実体。VSCode 側からはシンボリックリンクで参照する。
+// 新しいマシンでのセットアップ:
+//
+//   ln -s ~/dotfiles/vscode/settings.json \
+//     "$HOME/Library/Application Support/Code/User/settings.json"
+//
+// 既にファイルがある場合は先に退避する:
+//
+//   mv "$HOME/Library/Application Support/Code/User/settings.json" \
+//     "$HOME/Library/Application Support/Code/User/settings.json.bak"
+{
+    "terminal.integrated.enableImages": true,
+    "files.autoSave": "afterDelay",
+    "editor.fontSize": 16,
+    "typescript.inlayHints.parameterNames.enabled": "all",
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "claudeCode.preferredLocation": "panel",
+    "editor.tabSize": 2,
+    "editor.stickyTabStops": true,
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    },
+    "github.copilot.nextEditSuggestions.enabled": false,
+    "[ruby]": {
+        "editor.defaultFormatter": "misogi.ruby-rubocop"
+    },
+    "rubyLsp.rubyVersionManager": {
+        "identifier": "rbenv"
+    },
+    "rubyLsp.bundleGemfile": "/Users/shunya/.ruby-lsp/Gemfile",
+    "rubyLsp.useBundlerCompose": false,
+    "workbench.colorTheme": "GitHub Dark Colorblind (Beta)",
+    "chat.viewSessions.orientation": "stacked",
+    "extensions.autoUpdate": "off",
+    "workbench.settings.applyToAllProfiles": [
+
+    ],
+
+    // gitmoji
+    "gitmoji.outputType": "code",       // 文字列形式で絵文字を出力する
+    "gitmoji.onlyUseCustomEmoji": true, // カスタマイズした絵文字のみ表示する
+    "gitmoji.addCustomEmoji": [         // 絵文字のカスタマイズ
+        {
+            "emoji": "✨",
+            "code": ":sparkles:",
+            "description": "新機能"
+        },
+        {
+            "emoji": "🐛",
+            "code": ":bug:",
+            "description": "バグ修正"
+        },
+        {
+            "emoji": "♻️",
+            "code": ":recycle:",
+            "description": "リファクタリング"
+        },
+        {
+            "emoji": "💄",
+            "code": ":lipstick:",
+            "description": "UI/UX"
+        },
+        {
+            "emoji": "✅",
+            "code": ":white_check_mark:",
+            "description": "自動整形"
+        },
+        {
+            "emoji": "⚰️",
+            "code": ":coffin:",
+            "description": "削除"
+        },
+        {
+            "emoji": "📝",
+            "code": ":docs:",
+            "description": "ドキュメント"
+        },
+        {
+            "emoji": "🔍️",
+            "code": ":mag:",
+            "description": "SEO改善"
+        },
+        {
+            "emoji": "⚡️",
+            "code": ":zap:",
+            "description": "パフォーマンス改善"
+        },
+        {
+            "emoji": "💚",
+            "code": ":green_heart:",
+            "description": "テスト"
+        },
+        {
+            "emoji": "📦️",
+            "code": ":package:",
+            "description": "パッケージ"
+        },
+        {
+            "emoji": "⏪️",
+            "code": ":rewind:",
+            "description": "リバート"
+        },
+        {
+            "emoji": "🔀",
+            "code": ":twisted_rightwards_arrows:",
+            "description": "マージ"
+        },
+        {
+            "emoji": "🚧",
+            "code": ":construction:",
+            "description": "WIP"
+        },
+        {
+            "emoji": "🧑‍💻",
+            "code": ":technologist:",
+            "description": "開発環境"
+        },
+        {
+            "emoji": "🚀",
+            "code": ":rocket:",
+            "description": "本番リリース"
+        }
+    ]
+}
