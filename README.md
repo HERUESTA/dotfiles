@@ -3,57 +3,49 @@
 
 ## セットアップ
 
-### 初回
+設定ファイルは各ツールが読む場所へシンボリックリンクして使う。リンク方法は各ファイル先頭のコメントに書いてある（例: `vscode/settings.json`、`nvim/site/plugin/filetypes.lua`）。
 
-1. lazygit を 0.61.0 以上にする
+更新は `git pull` だけでよい（リンク先の実体が更新される）。
 
-   ```sh
-   lazygit --version        # version=0.61.0 以上か確認
-   brew upgrade lazygit     # macOS（Homebrew）の場合
-   ```
+## Claude Code の skill
 
-   古いままでもエラーにはならないが、gitmoji コミットの `condition` が無視され、どの type でも絵文字メニューが表示される（コミット結果は正しい）。
+skill は `.claude/skills/<名前>/` にディレクトリ単位で置いている。個人用 skill として `~/.claude/skills/` にシンボリックリンクすると、`git pull` だけで更新が反映される。
 
-2. Ruby が入っているか確認する（`ruby -v`）
-
-3. 設定ファイルのシンボリックリンクを作る
-
-   ```sh
-   ruby install.rb --dry-run   # 何も変更せず、予定の操作だけを表示
-   ruby install.rb             # 実際にリンクを作る
-   ```
-
-   | 出力 | 意味 |
-   |---|---|
-   | `skip:` | 既にリンク済み |
-   | `link:` | 設定ファイルがなかったので新しくリンクした |
-   | `backup:` + `link:` | 既存の設定を `<元の名前>.backup-<日時>` に移してからリンクした。残したい設定があれば dotfiles 側へ手で移す |
-   | `warn: lazygit が見つからない` | lazygit をインストールしてから再実行する |
-
-   何度実行しても安全（2 回目以降は `skip`）。
-
-### 更新するとき
+### リンクする（初回・他の PC）
 
 ```sh
-git pull
+# dotfiles の中で実行
+mkdir -p ~/.claude/skills
+
+REPO="$(git rev-parse --show-toplevel)"
+ln -sfn "$REPO/.claude/skills/commit-coach" ~/.claude/skills/commit-coach
 ```
 
-pull 後、起動中の lazygit は再起動する（設定は起動時に読み込まれる）。
+`ls -la ~/.claude/skills/` で、各 skill が dotfiles を指すリンクになっていれば完了。Claude Code を起動し直すと `/<skill名>` で呼べる。
 
-## lazygit
+### skill を追加する
 
-### gitmoji コミット（Files パネルで `c`）
+dotfiles で Claude Code を起動して「〇〇の skill を作って」と頼めば、`AGENTS.md` に従って 1〜3 を行う。手で行う場合:
 
-変更をステージして `c` を押すと、次の形式のコミットメッセージを対話的に作成できる。
+1. `.claude/skills/<名前>/SKILL.md` を作る
+2. リンクを張る
 
-```
-<絵文字> <type>: <メッセージ>
-例: ✨ feat: ログイン機能を追加
-    🚑️ fix: 決済が二重に走る問題を修正
-```
+   ```sh
+   ln -sfn "$(git rev-parse --show-toplevel)/.claude/skills/<名前>" ~/.claude/skills/<名前>
+   ```
 
-1. type を選択（`/` を押して入力すると絞り込める。例: `/` → `fi` → Enter で確定 → Enter で選択）
-2. 絵文字を選択（追加候補がある type のみ。先頭が既定の絵文字）
-3. メッセージを入力（空欄・空白のみなら中止）
+   `~/.claude/skills/<名前>` に実体のディレクトリが既にある skill を移すときは、先に `mv` で dotfiles へ移してから実行する（実体のディレクトリがあると、その中にリンクが作られてしまう）。
 
-エディタでメッセージを書きたいときは、lazygit 標準の `C` を使う。
+3. この README の「リンクする」のコマンドに `ln -sfn` の行を、下の表に skill の行を足す
+4. コミットして push する
+5. 他の PC では `git pull` して、増えた `ln -sfn` の行を実行する
+
+### skill を更新する
+
+SKILL.md を編集するだけでよい（リンク先の実体を編集しているため即座に反映される）。他の PC では `git pull` だけでよい。
+
+### skill 一覧
+
+| skill | 使うとき |
+|---|---|
+| [commit-coach](.claude/skills/commit-coach) | コミットするとき。`/commit-coach <自分で考えたメッセージの下書き>` で下書きを添削してコミットする。絵文字と type の付け方は SKILL.md の「gitmoji 採用セット」を参照 |
