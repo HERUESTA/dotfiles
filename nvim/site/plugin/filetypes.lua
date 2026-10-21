@@ -11,7 +11,7 @@
 -- 子のrtpには設定ディレクトリは入らず、treesitterパーサのあるsiteディレクトリが入るため、
 -- このファイルは以下へシンボリックリンクして初めて効く:
 --
---   ln -s ~/dotfiles/nvim/site/plugin/filetypes.lua \
+--   ln -s ~/workspace/github.com/HERUESTA/dotfiles/nvim/site/plugin/filetypes.lua \
 --         ~/.local/share/nvim/site/plugin/filetypes.lua
 --
 -- 親プロセスもsiteディレクトリをrtpに持つので、リンク1本で親子とも解決する。
