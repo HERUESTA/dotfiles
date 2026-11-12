@@ -1,0 +1,20 @@
+# リンク方法（dotfiles の中で実行）:
+#   ln -sfn "$(git rev-parse --show-toplevel)/ghostty" ~/.config/ghostty
+# ~/.config/ghostty に実体のディレクトリがあるときは、先に退避（mv）してから実行する。
+#
+# Ghostty 本体は入れていない。cmux がターミナルの描画に Ghostty を使っており、
+# テーマ・フォント・透過はこのファイルから読む（cmux.json には項目がない）。
+# 変更後は `cmux reload-config` で反映する。
+
+theme = tokyonight
+font-family = "BIZ UDGothic Bold"
+font-size = 17
+background-opacity = 0.8
+background-blur = 20
+unfocused-split-opacity = 0.7
+cursor-opacity = 0.7
+font-thicken
+window-save-state = always
+window-padding-x = 2
+window-padding-y = 2
+window-padding-balance = true
