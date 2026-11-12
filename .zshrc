@@ -54,3 +54,8 @@ zle -N history-beginning-search-forward-end history-search-end
 bindkey "^N" history-beginning-search-forward-end
 bindkey "^P" history-beginning-search-backward-end
 
+
+# Claude Code の mod。.zshrc の実体（dotfiles）から見た .claude/mods/ 以下を、すべて読み込ませる
+claude_mods=("${${(%):-%x}:A:h}"/.claude/mods/*(N/))
+export CLAUDE_CODE_PLUGIN_DIRS="${(j.:.)claude_mods}"
+unset claude_mods

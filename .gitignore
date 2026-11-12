@@ -1,2 +1,5 @@
 # macOS
 .DS_Store
+# Claude Code が mod の読み込み時に作る型定義
+.claude/mods/*/.claude-plugin/types/
+.claude/mods/*/tsconfig.json

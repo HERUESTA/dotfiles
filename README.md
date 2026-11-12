@@ -49,3 +49,13 @@ SKILL.md を編集するだけでよい（リンク先の実体を編集して�
 | skill | 使うとき |
 |---|---|
 | [commit-coach](.claude/skills/commit-coach) | コミットするとき。`/commit-coach <自分で考えたメッセージの下書き>` で下書きを添削してコミットする。絵文字と type の付け方は SKILL.md の「gitmoji 採用セット」を参照 |
+
+## Claude Code の mod
+
+mod は `.claude/mods/<名前>/` にディレクトリ単位で置いている。`.zshrc` が `.claude/mods/` 以下をすべて `CLAUDE_CODE_PLUGIN_DIRS` に入れるため、リンクを張る必要はない。新しいシェルで Claude Code を起動すれば読み込まれ、起動中も mod のファイルを編集すると読み直される。
+
+### mod 一覧
+
+| mod | 内容 |
+|---|---|
+| [peek-spinner](.claude/mods/peek-spinner) | スピナーの横に、ゴミ箱から顔を出すドット絵を出す。返答ごとに4つの動き（ぷるぷる・きょろきょろ・ガタガタ・ちらっ）から前回と違うものをランダムで選ぶ。返答を始める時点でコンテキストの使用率が80%以上なら「あせあせ」になる（`/compact` の目安）。`claude plugin test .claude/mods/peek-spinner` でテストできる |

@@ -1,0 +1,6 @@
+{
+  "name": "peek-spinner",
+  "version": "0.1.0",
+  "description": "スピナーの横で、ゴミ箱から顔を出すドット絵がプルプル動く",
+  "types": "./types/index.d.ts"
+}
