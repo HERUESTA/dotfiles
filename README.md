@@ -50,6 +50,14 @@ SKILL.md を編集するだけでよい（リンク先の実体を編集して�
 |---|---|
 | [commit-coach](.claude/skills/commit-coach) | コミットするとき。`/commit-coach <自分で考えたメッセージの下書き>` で下書きを添削してコミットする。絵文字と type の付け方は SKILL.md の「gitmoji 採用セット」を参照 |
 
+## cmux のサイドバー
+
+カスタムサイドバーは `cmux/sidebars/` に置いている。`cmux/` ごと `~/.config/cmux` にリンクしているため、追加のリンクは不要で、`git pull` すれば cmux のサイドバー切り替えボタンの右クリックメニューに出る。ファイルを保存するとその場で再読み込みされる。
+
+| サイドバー | 内容 |
+|---|---|
+| [gtd](cmux/sidebars/gtd.js) | ワークスペースを1タスクとして GTD 形式で並べる。分類は description のタグ（`@now` `@next` `@waiting` `@someday` `@done`、タグなしは INBOX）。エージェントの入力待ちや未読は INBOX の先頭に出し、実行中・レビュー中は「待ち」、PR が merge されたら「完了」に自動で移る。カードの右クリックで振り分けられる。`cmux sidebar select gtd` で表示する |
+
 ## Claude Code の mod
 
 mod は `.claude/mods/<名前>/` にディレクトリ単位で置いている。`.zshrc` が `.claude/mods/` 以下をすべて `CLAUDE_CODE_PLUGIN_DIRS` に入れるため、リンクを張る必要はない。新しいシェルで Claude Code を起動すれば読み込まれ、起動中も mod のファイルを編集すると読み直される。
