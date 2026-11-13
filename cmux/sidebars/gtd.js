@@ -2,7 +2,8 @@
 //
 // 1ワークスペース = 1タスク。GTD の分類は description のタグで持つ:
 //   @now / @next / @waiting / @someday / @done （タグなし = INBOX）
-// エージェントの入力待ち・未読通知はタグより優先して INBOX に出す。
+// タグを付けたカードは常にそのセクションに置く（入力待ちなどはカードの点の色と本文で示す）。
+// タグなしのカードだけ、入力待ち・未読は INBOX、実行中・レビュー中は待ち、merge 済みは完了に自動で置く。
 // PROJECTS はワークスペースグループ、進捗率はグループ内の完了の割合。
 //
 // リンク方法（dotfiles の中で実行）:
@@ -72,15 +73,17 @@ const needsInput = (w) =>
   agentsOf(w).some((a) => a.status === "needs_input") || w.status === "needs-attention";
 const working = (w) => agentsOf(w).some((a) => a.status === "working") || w.status === "working";
 
-// どの GTD 区分に置くか。上から順に判定する。
+// どの GTD 区分に置くか。手で付けたタグを常に優先し、
+// タグがないときだけ cmux の状態から自動で振り分ける。
+const BUCKET_OF_TAG = {
+  "@now": "now", "@next": "next", "@waiting": "waiting", "@someday": "someday", "@done": "done",
+};
 function bucketOf(w) {
   const tag = tagOf(w);
-  if (tag === "@done" || w.status === "done") return "done";
-  if (tag === "@now") return "now";
+  if (tag) return BUCKET_OF_TAG[tag];
+  if (w.status === "done") return "done";
   if (needsInput(w) || w.unread > 0) return "inbox";
-  if (tag === "@waiting" || working(w) || w.status === "review") return "waiting";
-  if (tag === "@next") return "next";
-  if (tag === "@someday") return "someday";
+  if (working(w) || w.status === "review") return "waiting";
   return "inbox";
 }
 

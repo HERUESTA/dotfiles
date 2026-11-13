@@ -56,7 +56,7 @@ SKILL.md を編集するだけでよい（リンク先の実体を編集して�
 
 | サイドバー | 内容 |
 |---|---|
-| [gtd](cmux/sidebars/gtd.js) | ワークスペースを1タスクとして GTD 形式で並べる。分類は description のタグ（`@now` `@next` `@waiting` `@someday` `@done`、タグなしは INBOX）。エージェントの入力待ちや未読は INBOX の先頭に出し、実行中・レビュー中は「待ち」、PR が merge されたら「完了」に自動で移る。カードの右クリックで振り分けられる。`cmux sidebar select gtd` で表示する。`.js` に対応していない cmux 用に同じ内容の `gtd.swift` も置いている（検索・開閉・絞り込みはなし）。両方あるときは cmux が `.js` を優先する |
+| [gtd](cmux/sidebars/gtd.js) | ワークスペースを1タスクとして GTD 形式で並べる。分類は description のタグ（`@now` `@next` `@waiting` `@someday` `@done`、タグなしは INBOX）。カードの右クリックで振り分けられ、振り分けたカードは状態にかかわらずそのセクションに残る（入力待ちは点の色と本文で分かる）。タグなしのカードだけ、エージェントの入力待ちや未読は INBOX の先頭、実行中・レビュー中は「待ち」、PR が merge されたら「完了」に自動で置く。`cmux sidebar select gtd` で表示する。`.js` に対応していない cmux 用に同じ内容の `gtd.swift` も置いている（検索・開閉・絞り込みはなし）。両方あるときは cmux が `.js` を優先する |
 
 ## Claude Code の mod
 

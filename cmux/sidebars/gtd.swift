@@ -45,14 +45,16 @@ func isWorking(_ w) -> Bool {
   return agentCount(w, "working") > 0 || w.status == "working"
 }
 
-// どの GTD 区分に置くか。上から順に判定する。
+// どの GTD 区分に置くか。手で付けたタグを常に優先し、タグがないときだけ cmux の状態から自動で振り分ける。
 func bucketOf(_ w) -> String {
-  if hasTag(w, "@done") || w.status == "done" { return "done" }
   if hasTag(w, "@now") { return "now" }
-  if needsInput(w) || w.unread > 0 { return "inbox" }
-  if hasTag(w, "@waiting") || isWorking(w) || w.status == "review" { return "waiting" }
   if hasTag(w, "@next") { return "next" }
+  if hasTag(w, "@waiting") { return "waiting" }
   if hasTag(w, "@someday") { return "someday" }
+  if hasTag(w, "@done") { return "done" }
+  if w.status == "done" { return "done" }
+  if needsInput(w) || w.unread > 0 { return "inbox" }
+  if isWorking(w) || w.status == "review" { return "waiting" }
   return "inbox"
 }
 
