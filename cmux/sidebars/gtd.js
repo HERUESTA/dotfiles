@@ -1,10 +1,12 @@
-// gtd: GTD 形式でワークスペースを並べる cmux のカスタムサイドバー
+// gtd: ワークスペースを TODO / DOING / DONE に並べる cmux のカスタムサイドバー
 //
-// 1ワークスペース = 1タスク。GTD の分類は description のタグで持つ:
-//   @now / @next / @waiting / @someday / @done （タグなし = INBOX）
+// 1ワークスペース = 1タスク。分類は description のタグで持つ:
+//   @todo / @doing / @done
+//   （以前のタグも読む: @next・@someday は TODO、@now・@waiting は DOING）
 // タグを付けたカードは常にそのセクションに置く（入力待ちなどはカードの点の色と本文で示す）。
-// タグなしのカードだけ、入力待ち・未読は INBOX、実行中・レビュー中は待ち、merge 済みは完了に自動で置く。
-// PROJECTS はワークスペースグループ、進捗率はグループ内の完了の割合。
+// タグなしのカードだけ、エージェントが動いている・入力待ち・未読・レビュー中は DOING、
+// merge 済みは DONE、それ以外は TODO に自動で置く。
+// PROJECTS はワークスペースグループ、進捗率はグループ内の DONE の割合。
 //
 // リンク方法（dotfiles の中で実行）:
 //   cmux/ ディレクトリごと ~/.config/cmux にリンクしているので、追加のリンクは不要。
@@ -15,7 +17,7 @@
 
 // ---------------------------------------------------------------- 定数
 
-const TAGS = ["@now", "@next", "@waiting", "@someday", "@done"];
+const TAGS = ["@todo", "@doing", "@done", "@now", "@next", "@waiting", "@someday"];
 
 const C = {
   inbox: "#F5A524",
@@ -30,18 +32,20 @@ const C = {
 };
 
 const SECTIONS = [
-  { id: "inbox", label: "INBOX", color: C.inbox, foldable: false },
-  { id: "next", label: "次に取るべき行動", color: C.next, foldable: false },
-  { id: "waiting", label: "待ち", color: C.waiting, foldable: false },
-  { id: "someday", label: "いつかやる・たぶんやる", color: C.idle, foldable: true },
-  { id: "done", label: "完了", color: C.idle, foldable: true },
+  { id: "todo", label: "TODO", color: C.next, foldable: false, empty: "TODO はありません" },
+  { id: "doing", label: "DOING", color: C.now, foldable: false, empty: "進行中のタスクはありません" },
+  { id: "done", label: "DONE", color: C.idle, foldable: true, empty: null },
 ];
 
 // ---------------------------------------------------------------- 状態
 
 const [query, setQuery] = signal("");
 const [groupFilter, setGroupFilter] = signal(null);
-const [folded, setFolded] = signal({ someday: true, done: true });
+const [folded, setFolded] = signal({ done: true });
+// ドロップしても何も変わらなかったときに、リストを元の並びで描き直すためのカウンタ
+const [moveTick, setMoveTick] = signal(0);
+// 名前を編集中のワークスペースの id（ダブルクリックか右クリックの「名前を変更」で入る）
+const [editingId, setEditingId] = signal(null);
 
 const toggleFold = (id) => {
   const next = Object.assign({}, folded());
@@ -73,18 +77,18 @@ const needsInput = (w) =>
   agentsOf(w).some((a) => a.status === "needs_input") || w.status === "needs-attention";
 const working = (w) => agentsOf(w).some((a) => a.status === "working") || w.status === "working";
 
-// どの GTD 区分に置くか。手で付けたタグを常に優先し、
+// どのセクションに置くか。手で付けたタグを常に優先し、
 // タグがないときだけ cmux の状態から自動で振り分ける。
 const BUCKET_OF_TAG = {
-  "@now": "now", "@next": "next", "@waiting": "waiting", "@someday": "someday", "@done": "done",
+  "@todo": "todo", "@doing": "doing", "@done": "done",
+  "@next": "todo", "@someday": "todo", "@now": "doing", "@waiting": "doing",
 };
 function bucketOf(w) {
   const tag = tagOf(w);
   if (tag) return BUCKET_OF_TAG[tag];
   if (w.status === "done") return "done";
-  if (needsInput(w) || w.unread > 0) return "inbox";
-  if (working(w) || w.status === "review") return "waiting";
-  return "inbox";
+  if (needsInput(w) || w.unread > 0 || working(w) || w.status === "review") return "doing";
+  return "todo";
 }
 
 function dotOf(w) {
@@ -92,8 +96,7 @@ function dotOf(w) {
   if (w.unread > 0) return C.unseen;
   if (working(w)) return C.waiting;
   if (w.status === "review") return C.review;
-  const tag = tagOf(w);
-  if (tag === "@next") return C.next;
+  if (bucketOf(w) === "todo") return C.next;
   return C.idle;
 }
 
@@ -111,7 +114,6 @@ function messageOf(w) {
   if (note) return note;
   if (working(w)) return "エージェント実行中" + (w.latestMessage ? "：" + w.latestMessage : "");
   if (w.status === "review") return "レビュー待ち";
-  if (!tagOf(w)) return "未整理：右クリックで振り分け";
   return w.latestPrompt ?? "";
 }
 
@@ -141,13 +143,13 @@ const select = (w) => cmux("workspace.select", { workspace_id: w.id });
 
 function taskMenu(w) {
   return [
-    Button("今すぐやる", () => setTag(w(), "@now")),
-    Button("次に取るべき行動", () => setTag(w(), "@next")),
-    Button("待ち", () => setTag(w(), "@waiting")),
-    Button("いつかやる・たぶんやる", () => setTag(w(), "@someday")),
+    Button("名前を変更", () => setEditingId(w().id)),
     Divider(),
-    Button("完了", () => setTag(w(), "@done")),
-    Button("INBOX に戻す", () => setTag(w(), null)),
+    Button("TODO", () => setTag(w(), "@todo")),
+    Button("DOING", () => setTag(w(), "@doing")),
+    Button("DONE", () => setTag(w(), "@done")),
+    Divider(),
+    Button("タグを外して自動で振り分ける", () => setTag(w(), null)),
   ];
 }
 
@@ -167,34 +169,37 @@ const visible = computed(() => {
 });
 
 const buckets = computed(() => {
-  const out = { now: [], inbox: [], next: [], waiting: [], someday: [], done: [] };
+  const out = { todo: [], doing: [], done: [] };
   for (const w of visible()) out[bucketOf(w)].push(w);
-  // 入力待ちを INBOX の先頭に
-  out.inbox.sort((a, b) => (needsInput(b) ? 1 : 0) - (needsInput(a) ? 1 : 0));
+  // 入力待ちを DOING の先頭に
+  out.doing.sort((a, b) => (needsInput(b) ? 1 : 0) - (needsInput(a) ? 1 : 0));
   return out;
 });
 
-const nowTask = computed(() => buckets().now[0] ?? null);
-
-// セクション見出し・カード・サブエージェントを1本の平らなリストにする
+// セクション見出し・カード・サブエージェントを1本の平らなリストにする。
+// どの行にも所属セクション（sid）を持たせ、ドロップ先の判定に使う。
+// 空のセクションも見出しは出す（ドラッグで入れられるように）。
 const entries = computed(() => {
+  moveTick();
+  const editing = editingId();
   const b = buckets();
   const f = folded();
   const out = [];
   for (const s of SECTIONS) {
     const items = b[s.id];
-    if (items.length === 0 && s.id !== "inbox") continue;
-    out.push({ key: "h:" + s.id, kind: "header", section: s, count: items.length });
+    out.push({ key: "h:" + s.id, kind: "header", sid: s.id, section: s, count: items.length });
     if (s.foldable && f[s.id]) continue;
     if (items.length === 0) {
-      out.push({ key: "e:" + s.id, kind: "empty", text: "Inbox ゼロ。すっきり。" });
+      if (s.empty) out.push({ key: "e:" + s.id, kind: "empty", sid: s.id, text: s.empty });
       continue;
     }
     for (const w of items.slice(0, 20)) {
-      out.push({ key: "w:" + w.id, kind: "card", w, highlight: needsInput(w) });
+      // 編集中はキーを変えて、行を入力欄として作り直す
+      if (editing === w.id) out.push({ key: "w:" + w.id + ":edit", kind: "edit", sid: s.id, w });
+      else out.push({ key: "w:" + w.id, kind: "card", sid: s.id, w, highlight: needsInput(w) });
       for (const a of agentsOf(w)) {
         for (const c of (a.children ?? []).filter((c) => c.running)) {
-          out.push({ key: "c:" + w.id + ":" + c.id, kind: "child", w, c });
+          out.push({ key: "c:" + w.id + ":" + c.id, kind: "child", sid: s.id, w, c });
         }
       }
     }
@@ -202,13 +207,48 @@ const entries = computed(() => {
   return out;
 });
 
+const TAG_OF_SECTION = { todo: "@todo", doing: "@doing", done: "@done" };
+
+// カードをドラッグで落としたとき。index は、ドラッグ中の行を除いたリストでの落とした位置。
+// 直前の行が属するセクションへ振り分け、同じセクション内なら並び順だけ変える。
+function handleMove(key, index) {
+  const before = entries();
+  const card = before.find((e) => e.key === key);
+  if (!card || card.kind !== "card") { setMoveTick(moveTick() + 1); return; } // 見出しなどは動かさない
+  const w = card.w;
+  const rest = before.filter((e) => e.key !== key);
+  const pos = Math.max(0, Math.min(index, rest.length));
+  const sid = pos > 0 ? rest[pos - 1].sid : "todo";
+
+  let changed = false;
+  if (sid !== card.sid) {
+    setTag(w, TAG_OF_SECTION[sid]);
+    changed = true;
+  }
+
+  // 落とした位置の前後にある同じセクションのカードを基準に、ワークスペースの並びを変える
+  const others = (data.workspaces() ?? []).map((x) => x.id).filter((id) => id !== w.id);
+  const nextCard = rest.slice(pos).find((e) => e.kind === "card" || e.kind === "header");
+  const prevCard = rest.slice(0, pos).reverse().find((e) => e.kind === "card" || e.kind === "header");
+  let target = -1;
+  if (nextCard && nextCard.kind === "card" && nextCard.sid === sid) target = others.indexOf(nextCard.w.id);
+  else if (prevCard && prevCard.kind === "card" && prevCard.sid === sid) target = others.indexOf(prevCard.w.id) + 1;
+  const current = (data.workspaces() ?? []).findIndex((x) => x.id === w.id);
+  if (target >= 0 && target !== current) {
+    cmux("workspace.reorder", { workspace_id: w.id, index: target });
+    changed = true;
+  }
+
+  if (!changed) setMoveTick(moveTick() + 1);
+}
+
 const projects = computed(() =>
   (data.groups() ?? [])
     .map((g) => {
       const members = (data.workspaces() ?? []).filter((w) => w.group === g.id);
       const done = members.filter((w) => bucketOf(w) === "done").length;
       const next =
-        members.find((w) => bucketOf(w) === "now") ?? members.find((w) => bucketOf(w) === "next");
+        members.find((w) => bucketOf(w) === "doing") ?? members.find((w) => bucketOf(w) === "todo");
       return {
         key: g.id,
         name: g.name,
@@ -263,7 +303,8 @@ function headerRow(e) {
     .paddingHorizontal(8).paddingVertical(4)
     .frame({ maxWidth: "infinity" })
     .cursor("pointer")
-    .onTap(() => { if (s.foldable) toggleFold(s.id); });
+    .onTap(() => { if (s.foldable) toggleFold(s.id); })
+    .fixed(); // 見出しはつかめないようにする（ドロップ先の目印としては動く）
 }
 
 function cardRow(e) {
@@ -295,7 +336,29 @@ function cardRow(e) {
     .cornerRadius(9)
     .cursor("pointer")
     .onTap(() => select(w()))
+    .onDoubleTap(() => setEditingId(w().id))
     .contextMenu(taskMenu(w));
+}
+
+// 名前の編集欄。Return で確定、Esc で取り消し。空で確定すると自動の名前に戻す。
+function editRow(e) {
+  const w = () => e().w;
+  return TextField(() => w().title ?? "", {
+    placeholder: "タスク名",
+    onSubmit: (t) => {
+      const title = (t ?? "").trim();
+      if (title) cmux("workspace.action", { action: "rename", workspace_id: w().id, title });
+      else cmux("workspace.action", { action: "clear_name", workspace_id: w().id });
+      setEditingId(null);
+    },
+    onCancel: () => setEditingId(null),
+  })
+    .font(13)
+    .padding(9)
+    .frame({ maxWidth: "infinity" })
+    .background("#7f7f7f3d")
+    .cornerRadius(9)
+    .fixed();
 }
 
 function childRow(e) {
@@ -305,48 +368,11 @@ function childRow(e) {
     Text(() => e().c.label ?? "subagent").font(11.5).color("secondary").lineLimit(1).truncation("tail"),
     Spacer({ minLength: 0 }),
     Text(() => fmt(epoch() - (e().c.startedEpoch ?? epoch()))).font(10).monospaced().color("tertiary"),
-  ]).paddingHorizontal(22).paddingVertical(1);
+  ]).paddingHorizontal(22).paddingVertical(1).fixed();
 }
 
 function emptyRow(e) {
-  return Text(() => e().text).font(11).color("tertiary").paddingHorizontal(10).paddingVertical(4);
-}
-
-function nowCard() {
-  const w = () => nowTask();
-  const has = () => w() !== null;
-  return VStack({ spacing: 7 }, [
-    HStack({ spacing: 6 }, [
-      Text(() => (has() ? "今すぐやる" : "")).font(11).weight("bold").color(C.now),
-      Spacer(),
-      Text(() => (has() ? timeOf(w()) : "")).font(10).monospaced().color(C.now),
-    ]),
-    Text(() => (has() ? w().title : ""))
-      .font(15).weight("bold").lineLimit(2).truncation("tail"),
-    Text(() => (has() ? messageOf(w()) : ""))
-      .font(11.5).color("secondary").lineLimit(2).truncation("tail"),
-    HStack({ spacing: 6 }, [
-      Text(() => (has() ? "中断" : ""))
-        .font(12).weight("semibold").color(C.now)
-        .frame({ maxWidth: "infinity" }).paddingVertical(() => (has() ? 5 : 0))
-        .background(() => (has() ? C.now + "26" : null)).cornerRadius(6)
-        .cursor("pointer")
-        .onTap(() => { if (has()) setTag(w(), "@next"); }),
-      Text(() => (has() ? "完了" : ""))
-        .font(12).weight("semibold").color("#1A1C21")
-        .frame({ maxWidth: "infinity" }).paddingVertical(() => (has() ? 5 : 0))
-        .background(() => (has() ? C.now : null)).cornerRadius(6)
-        .cursor("pointer")
-        .onTap(() => { if (has()) setTag(w(), "@done"); }),
-    ]),
-  ])
-    .padding(() => (has() ? 11 : 0))
-    .frame({ maxWidth: "infinity" })
-    .background(() => (has() ? tint(C.now, "24") : null))
-    .borderColor(() => (has() ? C.now + "66" : "#00000000"))
-    .borderWidth(1)
-    .cornerRadius(10)
-    .onTap(() => { if (has()) select(w()); });
+  return Text(() => e().text).font(11).color("tertiary").paddingHorizontal(10).paddingVertical(4).fixed();
 }
 
 function projectRow(p) {
@@ -388,9 +414,8 @@ sidebar(() =>
         Image("checkmark.square").font(14).color(C.next),
         Text("タスク管理").font(15).weight("bold"),
         Spacer(),
-        countDot(C.inbox, () => buckets().inbox.length),
-        countDot(C.next, () => buckets().next.length),
-        countDot(C.waiting, () => buckets().waiting.length),
+        countDot(C.next, () => buckets().todo.length),
+        countDot(C.now, () => buckets().doing.length),
         countDot(C.idle, () => buckets().done.length),
       ]).paddingHorizontal(6),
 
@@ -410,13 +435,12 @@ sidebar(() =>
 
       Divider(),
 
-      nowCard(),
-
-      ForEach({ items: entries, key: (e) => e.key }, (e) => {
+      Reorderable({ items: entries, key: (e) => e.key, onMove: handleMove, spacing: 10 }, (e) => {
         const kind = e().kind; // key ごとに kind は固定
         if (kind === "header") return headerRow(e);
         if (kind === "child") return childRow(e);
         if (kind === "empty") return emptyRow(e);
+        if (kind === "edit") return editRow(e);
         return cardRow(e);
       }),
 
@@ -428,12 +452,12 @@ sidebar(() =>
         HStack({}, [
           Text("進捗").font(11).weight("bold").color("secondary"),
           Spacer(),
-          Text(() => "完了 " + totals().done + " / " + totals().total)
+          Text(() => "DONE " + totals().done + " / " + totals().total)
             .font(10).monospaced().color("secondary"),
         ]),
         ProgressView({ value: () => (totals().total ? totals().done / totals().total : 0) }),
-        Text("右クリックで振り分け。Claude に「完了」と言っても更新できます")
-          .font(10.5).color("tertiary").lineLimit(2),
+        Text("ドラッグか右クリックで振り分け、ダブルクリックで名前を変更。Claude に頼んでも更新できます")
+          .font(10.5).color("tertiary").lineLimit(3),
       ])
         .padding(10)
         .background("#7f7f7f1a")

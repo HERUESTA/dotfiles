@@ -1,11 +1,13 @@
-// gtd: GTD 形式でワークスペースを並べる cmux のカスタムサイドバー（.swift 版）
+// gtd: ワークスペースを TODO / DOING / DONE に並べる cmux のカスタムサイドバー（.swift 版）
 //
 // gtd.js と同じ内容を、.js に対応していない cmux でも動く形式で書いたもの。
 // 両方あるときは cmux が .js を優先するので、.js 対応版になれば自動で切り替わる。
-// .swift 版は状態を持てないため、検索欄・セクションの開閉・グループでの絞り込みはない。
+// .swift 版は状態を持てないため、検索欄・セクションの開閉・グループでの絞り込み・
+// ドラッグでの振り分け・名前の変更はない。
 //
-// 1ワークスペース = 1タスク。GTD の分類は description のタグで持つ:
-//   @now / @next / @waiting / @someday / @done （タグなし = INBOX）
+// 1ワークスペース = 1タスク。分類は description のタグで持つ:
+//   @todo / @doing / @done
+//   （以前のタグも読む: @next・@someday は TODO、@now・@waiting は DOING）
 //
 // リンク方法（dotfiles の中で実行）:
 //   cmux/ ディレクトリごと ~/.config/cmux にリンクしているので、追加のリンクは不要。
@@ -21,10 +23,6 @@ func descOf(_ w) -> String {
 
 func hasTag(_ w, _ tag) -> Bool {
   return descOf(w).contains(tag)
-}
-
-func isTagged(_ w) -> Bool {
-  return hasTag(w, "@now") || hasTag(w, "@next") || hasTag(w, "@waiting") || hasTag(w, "@someday") || hasTag(w, "@done")
 }
 
 // タグ以外のメモ部分
@@ -45,17 +43,16 @@ func isWorking(_ w) -> Bool {
   return agentCount(w, "working") > 0 || w.status == "working"
 }
 
-// どの GTD 区分に置くか。手で付けたタグを常に優先し、タグがないときだけ cmux の状態から自動で振り分ける。
+// どのセクションに置くか。手で付けたタグを常に優先し、タグがないときだけ cmux の状態から自動で振り分ける。
 func bucketOf(_ w) -> String {
-  if hasTag(w, "@now") { return "now" }
-  if hasTag(w, "@next") { return "next" }
-  if hasTag(w, "@waiting") { return "waiting" }
-  if hasTag(w, "@someday") { return "someday" }
+  if hasTag(w, "@todo") { return "todo" }
+  if hasTag(w, "@doing") { return "doing" }
   if hasTag(w, "@done") { return "done" }
+  if hasTag(w, "@now") || hasTag(w, "@waiting") { return "doing" }
+  if hasTag(w, "@next") || hasTag(w, "@someday") { return "todo" }
   if w.status == "done" { return "done" }
-  if needsInput(w) || w.unread > 0 { return "inbox" }
-  if isWorking(w) || w.status == "review" { return "waiting" }
-  return "inbox"
+  if needsInput(w) || w.unread > 0 || isWorking(w) || w.status == "review" { return "doing" }
+  return "todo"
 }
 
 func dotOf(_ w) -> String {
@@ -63,7 +60,7 @@ func dotOf(_ w) -> String {
   if w.unread > 0 { return "#F2D24B" }
   if isWorking(w) { return "#4CC38A" }
   if w.status == "review" { return "#B48CFF" }
-  if hasTag(w, "@next") { return "#5AA9FF" }
+  if bucketOf(w) == "todo" { return "#5AA9FF" }
   return "#7D8491"
 }
 
@@ -95,7 +92,6 @@ func messageOf(_ w) -> String {
   if note != "" { return note }
   if isWorking(w) { return "エージェント実行中" }
   if w.status == "review" { return "レビュー待ち" }
-  if !isTagged(w) { return "未整理：右クリックで振り分け" }
   return w.latestPrompt != nil ? w.latestPrompt : ""
 }
 
@@ -166,43 +162,12 @@ func card(_ w, _ now) -> some View {
     }
   }
   .contextMenu {
-    Button("今すぐやる") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@now")) }
-    Button("次に取るべき行動") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@next")) }
-    Button("待ち") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@waiting")) }
-    Button("いつかやる・たぶんやる") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@someday")) }
+    Button("TODO") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@todo")) }
+    Button("DOING") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@doing")) }
+    Button("DONE") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@done")) }
     Divider()
-    Button("完了") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@done")) }
-    Button("INBOX に戻す") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "")) }
+    Button("タグを外して自動で振り分ける") { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "")) }
   }
-}
-
-func nowCard(_ w, _ now) -> some View {
-  VStack(alignment: .leading, spacing: 7) {
-    HStack {
-      Text("今すぐやる").font(.system(size: 11)).fontWeight(.bold).foregroundColor("#FF7A59")
-      Spacer()
-      Text(timeOf(w, now)).font(.system(size: 10, design: .monospaced)).foregroundColor("#FF7A59")
-    }
-    Button(action: { cmux("workspace.select", workspace_id: w.id) }) {
-      Text(w.title).font(.system(size: 15)).fontWeight(.bold).lineLimit(2)
-    }
-    Text(messageOf(w)).font(.system(size: 11.5)).foregroundColor(.secondary).lineLimit(2)
-    HStack(spacing: 6) {
-      Button(action: { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@next")) }) {
-        Text("中断").font(.system(size: 12)).fontWeight(.semibold).foregroundColor("#FF7A59")
-          .frame(maxWidth: .infinity).padding(.vertical, 5)
-          .background { RoundedRectangle(cornerRadius: 6).foregroundColor("#FF7A59").opacity(0.16) }
-      }
-      Button(action: { cmux("workspace.action", action: "set_description", workspace_id: w.id, description: withTag(w, "@done")) }) {
-        Text("完了").font(.system(size: 12)).fontWeight(.semibold).foregroundColor("#1A1C21")
-          .frame(maxWidth: .infinity).padding(.vertical, 5)
-          .background { RoundedRectangle(cornerRadius: 6).foregroundColor("#FF7A59") }
-      }
-    }
-  }
-  .padding(11)
-  .frame(maxWidth: .infinity, alignment: .leading)
-  .background { RoundedRectangle(cornerRadius: 10).foregroundColor("#FF7A59").opacity(0.14) }
 }
 
 // ---------------------------------------------------------------- 本体
@@ -210,52 +175,35 @@ func nowCard(_ w, _ now) -> some View {
 VStack(alignment: .leading, spacing: 10) {
   let all = workspaces.prefix(80)
   let now = clock.epoch
-  let nowTasks = all.filter { bucketOf($0) == "now" }
-  let inbox = all.filter { bucketOf($0) == "inbox" }.sorted { (needsInput($0) ? 1 : 0) > (needsInput($1) ? 1 : 0) }
-  let next = all.filter { bucketOf($0) == "next" }
-  let waiting = all.filter { bucketOf($0) == "waiting" }
-  let someday = all.filter { bucketOf($0) == "someday" }
+  let todo = all.filter { bucketOf($0) == "todo" }
+  let doing = all.filter { bucketOf($0) == "doing" }.sorted { (needsInput($0) ? 1 : 0) > (needsInput($1) ? 1 : 0) }
   let done = all.filter { bucketOf($0) == "done" }
 
   HStack(spacing: 8) {
     Image(systemName: "checkmark.square").font(.system(size: 14)).foregroundColor("#5AA9FF")
     Text("タスク管理").font(.system(size: 15)).bold()
     Spacer()
-    countDot("#F5A524", inbox.count)
-    countDot("#5AA9FF", next.count)
-    countDot("#4CC38A", waiting.count)
+    countDot("#5AA9FF", todo.count)
+    countDot("#FF7A59", doing.count)
     countDot("#7D8491", done.count)
   }
   .padding(.horizontal, 6)
   Divider()
 
-  if nowTasks.count > 0 {
-    nowCard(nowTasks.first, now)
+  sectionHeader("TODO", todo.count, "#5AA9FF")
+  if todo.count == 0 {
+    Text("TODO はありません").font(.system(size: 11)).foregroundColor(.tertiary).padding(.horizontal, 10)
   }
+  ForEach(todo.prefix(20)) { w in card(w, now) }
 
-  sectionHeader("INBOX", inbox.count, "#F5A524")
-  if inbox.count == 0 {
-    Text("Inbox ゼロ。すっきり。").font(.system(size: 11)).foregroundColor(.tertiary).padding(.horizontal, 10)
+  sectionHeader("DOING", doing.count, "#FF7A59")
+  if doing.count == 0 {
+    Text("進行中のタスクはありません").font(.system(size: 11)).foregroundColor(.tertiary).padding(.horizontal, 10)
   }
-  ForEach(inbox.prefix(20)) { w in card(w, now) }
-
-  if next.count > 0 {
-    sectionHeader("次に取るべき行動", next.count, "#5AA9FF")
-    ForEach(next.prefix(20)) { w in card(w, now) }
-  }
-
-  if waiting.count > 0 {
-    sectionHeader("待ち", waiting.count, "#4CC38A")
-    ForEach(waiting.prefix(20)) { w in card(w, now) }
-  }
-
-  if someday.count > 0 {
-    sectionHeader("いつかやる・たぶんやる", someday.count, "#7D8491")
-    ForEach(someday.prefix(5)) { w in card(w, now).opacity(0.6) }
-  }
+  ForEach(doing.prefix(20)) { w in card(w, now) }
 
   if done.count > 0 {
-    sectionHeader("完了", done.count, "#7D8491")
+    sectionHeader("DONE", done.count, "#7D8491")
     ForEach(done.prefix(3)) { w in card(w, now).opacity(0.45) }
   }
 
@@ -263,10 +211,10 @@ VStack(alignment: .leading, spacing: 10) {
     HStack {
       Text("進捗").font(.system(size: 11)).fontWeight(.bold).foregroundColor(.secondary)
       Spacer()
-      Text("完了 \(done.count) / \(all.count)").font(.system(size: 10, design: .monospaced)).foregroundColor(.secondary)
+      Text("DONE \(done.count) / \(all.count)").font(.system(size: 10, design: .monospaced)).foregroundColor(.secondary)
     }
     ProgressView(value: all.count > 0 ? Double(done.count) / Double(all.count) : 0.0, total: 1.0).tint("#4CC38A")
-    Text("右クリックで振り分け。Claude に「完了」と言っても更新できます")
+    Text("右クリックで振り分け。Claude に頼んでも更新できます")
       .font(.system(size: 10.5)).foregroundColor(.tertiary).lineLimit(2)
   }
   .padding(10)
