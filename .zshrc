@@ -33,6 +33,11 @@ bindkey '^g' ghq-cd
 
 source $ZSH/oh-my-zsh.sh
 
+# プロンプトのパスは今いるディレクトリの名前だけにする（eastwood はフルパスを出すため上書きする）
+PROMPT='$(git_custom_status)%{$fg[cyan]%}[%1~]%{$reset_color%}%B$%b '
+# 右端の rbenv のバージョン表示（eastwood が出す）を消す
+unset RPS1
+
 alias vi="nvim"
 
 . "$HOME/.local/bin/env"
