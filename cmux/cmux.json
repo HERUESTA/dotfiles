@@ -6,6 +6,28 @@
   "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
   "schemaVersion": 1,
 
+  // リンクは cmux の内蔵ブラウザではなく、システムの既定ブラウザで開く。
+  // 内蔵ブラウザにログイン情報（セッション）を持たせないため。
+  "browser": {
+    "openTerminalLinksInCmuxBrowser": false,
+    "interceptTerminalOpenCommandInCmuxBrowser": false
+  },
+  "sidebar": {
+    "openPullRequestLinksInCmuxBrowser": false,
+    "openPortLinksInCmuxBrowser": false
+  },
+
+  // cmd+[ / cmd+] でペインを順番に巡回する。
+  // 既定ではこのキーは「フォーカス履歴を戻る・進む」なので、そちらは外す。
+  "shortcuts": {
+    "bindings": {
+      "focusPreviousPane": "cmd+[",
+      "focusNextPane": "cmd+]",
+      "focusHistoryBack": "",
+      "focusHistoryForward": ""
+    }
+  },
+
   // This file uses JSON with comments (JSONC).
   // Uncomment and edit any setting to make it file-managed.
   // Remove a setting to fall back to the value saved in Settings.
