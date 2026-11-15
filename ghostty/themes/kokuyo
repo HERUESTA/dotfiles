@@ -1,0 +1,33 @@
+# kokuyo（黒曜）: 青みの黒に氷青のアクセントを置いた自作テーマ
+#
+# リンク方法: ghostty/ ディレクトリごと ~/.config/ghostty にリンクしているので、追加のリンクは不要。
+# ghostty/config で `theme = kokuyo` と指定して使う。
+
+background = #07090d
+foreground = #c8d3e0
+
+cursor-color = #7fb2ff
+cursor-text = #07090d
+
+selection-background = #1f2a3a
+selection-foreground = #c8d3e0
+
+# 通常色: 黒・赤・緑・黄・青・紫・シアン・白
+palette = 0=#141a23
+palette = 1=#f2777a
+palette = 2=#8fd6a0
+palette = 3=#e9c46a
+palette = 4=#7fb2ff
+palette = 5=#b8a1f5
+palette = 6=#7fd6e0
+palette = 7=#c8d3e0
+
+# 明るい色: 同じ並びで一段明るくしたもの
+palette = 8=#8591a3
+palette = 9=#ff9396
+palette = 10=#a8e6b6
+palette = 11=#f2d488
+palette = 12=#a3c8ff
+palette = 13=#cdbcfa
+palette = 14=#a0e4ec
+palette = 15=#e6edf5

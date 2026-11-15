@@ -6,7 +6,7 @@
 # テーマ・フォント・透過はこのファイルから読む（cmux.json には項目がない）。
 # 変更後は `cmux reload-config` で反映する。
 
-theme = Ayu
+theme = kokuyo
 font-family = "BIZ UDGothic Bold"
 font-size = 17
 background-opacity = 0.8
