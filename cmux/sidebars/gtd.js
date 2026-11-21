@@ -1,12 +1,13 @@
-// gtd: ワークスペースを TODO / DOING / DONE に並べる cmux のカスタムサイドバー
+// gtd: ワークスペースを TODO / DOING に並べる cmux のカスタムサイドバー
 //
 // 1ワークスペース = 1タスク。分類は description のタグで持つ:
-//   @todo / @doing / @done
-//   （以前のタグも読む: @next・@someday は TODO、@now・@waiting は DOING）
+//   @todo / @doing
+//   （以前のタグも読む: @next・@someday・@done は TODO、@now・@waiting は DOING）
+// 終わったタスクは DONE に残さず、ワークスペースごと閉じる（ターミナルのセッションを残さない）。
 // タグを付けたカードは常にそのセクションに置く（入力待ちなどはカードの点の色と本文で示す）。
 // タグなしのカードだけ、エージェントが動いている・入力待ち・未読・レビュー中は DOING、
-// merge 済みは DONE、それ以外は TODO に自動で置く。
-// PROJECTS はワークスペースグループ、進捗率はグループ内の DONE の割合。
+// それ以外は TODO に自動で置く。
+// PROJECTS はワークスペースグループ。
 //
 // リンク方法（dotfiles の中で実行）:
 //   cmux/ ディレクトリごと ~/.config/cmux にリンクしているので、追加のリンクは不要。
@@ -17,7 +18,7 @@
 
 // ---------------------------------------------------------------- 定数
 
-const TAGS = ["@todo", "@doing", "@done", "@now", "@next", "@waiting", "@someday"];
+const TAGS = ["@todo", "@doing", "@now", "@next", "@waiting", "@someday", "@done"];
 
 const C = {
   inbox: "#F5A524",
@@ -32,26 +33,18 @@ const C = {
 };
 
 const SECTIONS = [
-  { id: "todo", label: "TODO", color: C.next, foldable: false, empty: "TODO はありません" },
-  { id: "doing", label: "DOING", color: C.now, foldable: false, empty: "進行中のタスクはありません" },
-  { id: "done", label: "DONE", color: C.idle, foldable: true, empty: null },
+  { id: "todo", label: "TODO", color: C.next, empty: "TODO はありません" },
+  { id: "doing", label: "DOING", color: C.now, empty: "進行中のタスクはありません" },
 ];
 
 // ---------------------------------------------------------------- 状態
 
 const [query, setQuery] = signal("");
 const [groupFilter, setGroupFilter] = signal(null);
-const [folded, setFolded] = signal({ done: true });
 // ドロップしても何も変わらなかったときに、リストを元の並びで描き直すためのカウンタ
 const [moveTick, setMoveTick] = signal(0);
 // 名前を編集中のワークスペースの id（ダブルクリックか右クリックの「名前を変更」で入る）
 const [editingId, setEditingId] = signal(null);
-
-const toggleFold = (id) => {
-  const next = Object.assign({}, folded());
-  next[id] = !next[id];
-  setFolded(next);
-};
 
 const epoch = () => data.clock()?.epoch ?? 0;
 
@@ -80,13 +73,12 @@ const working = (w) => agentsOf(w).some((a) => a.status === "working") || w.stat
 // どのセクションに置くか。手で付けたタグを常に優先し、
 // タグがないときだけ cmux の状態から自動で振り分ける。
 const BUCKET_OF_TAG = {
-  "@todo": "todo", "@doing": "doing", "@done": "done",
-  "@next": "todo", "@someday": "todo", "@now": "doing", "@waiting": "doing",
+  "@todo": "todo", "@doing": "doing",
+  "@next": "todo", "@someday": "todo", "@done": "todo", "@now": "doing", "@waiting": "doing",
 };
 function bucketOf(w) {
   const tag = tagOf(w);
   if (tag) return BUCKET_OF_TAG[tag];
-  if (w.status === "done") return "done";
   if (needsInput(w) || w.unread > 0 || working(w) || w.status === "review") return "doing";
   return "todo";
 }
@@ -147,7 +139,6 @@ function taskMenu(w) {
     Divider(),
     Button("TODO", () => setTag(w(), "@todo")),
     Button("DOING", () => setTag(w(), "@doing")),
-    Button("DONE", () => setTag(w(), "@done")),
     Divider(),
     Button("タグを外して自動で振り分ける", () => setTag(w(), null)),
   ];
@@ -169,7 +160,7 @@ const visible = computed(() => {
 });
 
 const buckets = computed(() => {
-  const out = { todo: [], doing: [], done: [] };
+  const out = { todo: [], doing: [] };
   for (const w of visible()) out[bucketOf(w)].push(w);
   // 入力待ちを DOING の先頭に
   out.doing.sort((a, b) => (needsInput(b) ? 1 : 0) - (needsInput(a) ? 1 : 0));
@@ -183,12 +174,10 @@ const entries = computed(() => {
   moveTick();
   const editing = editingId();
   const b = buckets();
-  const f = folded();
   const out = [];
   for (const s of SECTIONS) {
     const items = b[s.id];
     out.push({ key: "h:" + s.id, kind: "header", sid: s.id, section: s, count: items.length });
-    if (s.foldable && f[s.id]) continue;
     if (items.length === 0) {
       if (s.empty) out.push({ key: "e:" + s.id, kind: "empty", sid: s.id, text: s.empty });
       continue;
@@ -207,7 +196,7 @@ const entries = computed(() => {
   return out;
 });
 
-const TAG_OF_SECTION = { todo: "@todo", doing: "@doing", done: "@done" };
+const TAG_OF_SECTION = { todo: "@todo", doing: "@doing" };
 
 // カードをドラッグで落としたとき。index は、ドラッグ中の行を除いたリストでの落とした位置。
 // 直前の行が属するセクションへ振り分け、同じセクション内なら並び順だけ変える。
@@ -246,7 +235,6 @@ const projects = computed(() =>
   (data.groups() ?? [])
     .map((g) => {
       const members = (data.workspaces() ?? []).filter((w) => w.group === g.id);
-      const done = members.filter((w) => bucketOf(w) === "done").length;
       const next =
         members.find((w) => bucketOf(w) === "doing") ?? members.find((w) => bucketOf(w) === "todo");
       return {
@@ -254,18 +242,11 @@ const projects = computed(() =>
         name: g.name,
         color: g.color ?? C.next,
         total: members.length,
-        ratio: members.length ? done / members.length : 0,
         next: next ? next.title : "—",
       };
     })
     .filter((p) => p.total > 0)
 );
-
-const totals = computed(() => {
-  const all = data.workspaces() ?? [];
-  const done = all.filter((w) => bucketOf(w) === "done").length;
-  return { done, total: all.length };
-});
 
 // ---------------------------------------------------------------- 部品
 
@@ -295,15 +276,9 @@ function headerRow(e) {
     Text(s.label).font(11).weight("bold").color(s.color),
     Text(() => String(e().count)).font(11).color("secondary"),
     Spacer(),
-    Image("chevron.right")
-      .font(9).color("tertiary")
-      .rotation(() => (s.foldable && folded()[s.id] ? 0 : 90))
-      .frame({ width: 14, height: 14 }),
   ])
     .paddingHorizontal(8).paddingVertical(4)
     .frame({ maxWidth: "infinity" })
-    .cursor("pointer")
-    .onTap(() => { if (s.foldable) toggleFold(s.id); })
     .fixed(); // 見出しはつかめないようにする（ドロップ先の目印としては動く）
 }
 
@@ -381,9 +356,8 @@ function projectRow(p) {
       RoundedRectangle({ width: 7, height: 7, cornerRadius: 2 }).fill(() => p().color),
       Text(() => p().name).font(12.5).weight("semibold").lineLimit(1).truncation("tail"),
       Spacer({ minLength: 0 }),
-      Text(() => Math.round(p().ratio * 100) + "%").font(10).monospaced().color("secondary"),
+      Text(() => p().total + "件").font(10).monospaced().color("secondary"),
     ]),
-    ProgressView({ value: () => p().ratio }).paddingHorizontal(14),
     Text(() => "次：" + p().next).font(11).color("secondary").lineLimit(1).truncation("tail")
       .paddingHorizontal(14),
   ])
@@ -416,7 +390,6 @@ sidebar(() =>
         Spacer(),
         countDot(C.next, () => buckets().todo.length),
         countDot(C.now, () => buckets().doing.length),
-        countDot(C.idle, () => buckets().done.length),
       ]).paddingHorizontal(6),
 
       HStack({ spacing: 4 }, [
@@ -449,14 +422,7 @@ sidebar(() =>
       ForEach({ items: projects, key: (p) => p.key }, (p) => projectRow(p)),
 
       VStack({ spacing: 6 }, [
-        HStack({}, [
-          Text("進捗").font(11).weight("bold").color("secondary"),
-          Spacer(),
-          Text(() => "DONE " + totals().done + " / " + totals().total)
-            .font(10).monospaced().color("secondary"),
-        ]),
-        ProgressView({ value: () => (totals().total ? totals().done / totals().total : 0) }),
-        Text("ドラッグか右クリックで振り分け、ダブルクリックで名前を変更。Claude に頼んでも更新できます")
+        Text("ドラッグか右クリックで振り分け、ダブルクリックで名前を変更。終わったらワークスペースを閉じる")
           .font(10.5).color("tertiary").lineLimit(3),
       ])
         .padding(10)
